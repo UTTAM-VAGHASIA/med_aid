@@ -112,7 +112,7 @@ class StartingOptionsScreen extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       // Navigate to sign up screen (also using auth screen)
-                      appRouter.goWithTransition('/auth');
+                      appRouter.goWithTransition('/auth-test');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800],

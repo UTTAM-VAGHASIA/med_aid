@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:med_aid/app/app_router.dart';
+import 'package:med_aid/features/auth/bindings/auth_binding.dart';
 import 'package:med_aid/features/auth/controllers/auth_controller.dart';
 
 class LoginMobileNumberScreen extends StatefulWidget {
@@ -18,6 +18,8 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
   @override
   void initState() {
     super.initState();
+    // Make sure auth binding is initialized
+    AuthBinding().dependencies();
     _authController = Get.find<AuthController>();
   }
   
@@ -45,7 +47,6 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    final AppRouter appRouter = Get.find<AppRouter>();
 
     return Scaffold(
       body: SafeArea(
@@ -225,7 +226,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                     elevation: 0,
                   ),
                   icon: Image.network(
-                    'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                    'https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw',
                     width: 18,
                     height: 18,
                     errorBuilder: (context, error, stackTrace) => const Icon(
