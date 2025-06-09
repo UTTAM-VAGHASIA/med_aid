@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
 import 'package:med_aid/features/splash/presentation/views/splash_screen.dart';
 import 'package:med_aid/features/home/presentation/views/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
+import 'package:med_aid/core/controllers/transition_controller.dart';
 // import 'package:med_aid/features/auth/presentation/views/auth_screen.dart';
 import 'package:med_aid/features/auth/presentation/views/auth_test_screen.dart';
 
@@ -24,8 +26,19 @@ enum AppRoute {
 class AppRouter {
   // Expose the GoRouter instance
   late final GoRouter router;
+  TransitionController? _transitionController;
   
   AppRouter() {
+    debugPrint("AppRouter: Initializing");
+    
+    try {
+      _transitionController = Get.find<TransitionController>();
+      debugPrint("AppRouter: Found TransitionController");
+    } catch (e) {
+      debugPrint("AppRouter: TransitionController not available - $e");
+      // Will proceed without transition controller
+    }
+    
     router = GoRouter(
       navigatorKey: _rootNavigatorKey,
       initialLocation: '/splash', // Start with splash screen
@@ -100,6 +113,22 @@ class AppRouter {
       ),
       debugLogDiagnostics: true,
     );
+    
+    debugPrint("AppRouter: Initialized successfully");
+  }
+  
+  // Navigate with transition animation
+  Future<void> goWithTransition(String path) async {
+    debugPrint("AppRouter: goWithTransition called for path $path");
+    
+    if (_transitionController != null) {
+      await _transitionController!.transitionBetweenPages(() {
+        router.go(path);
+      });
+    } else {
+      debugPrint("AppRouter: No transition controller, using direct navigation");
+      router.go(path);
+    }
   }
 }
 

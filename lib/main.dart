@@ -6,6 +6,7 @@ import 'package:forui/forui.dart';
 import 'package:med_aid/app/app_theme.dart';
 import 'package:med_aid/app/app_router.dart';
 import 'package:med_aid/app/app_bindings.dart';
+import 'package:med_aid/core/widgets/transition_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +49,7 @@ class MyApp extends StatelessWidget {
           data: Theme.of(context).brightness == Brightness.light
               ? medAidLightTheme
               : medAidDarkTheme,
-          child: child!,
+          child: TransitionOverlay(child: child!),
         );
       },
     );
