@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:med_aid/core/controllers/transition_controller.dart';
 // import 'package:med_aid/features/auth/presentation/views/auth_screen.dart';
-import 'package:med_aid/features/auth/presentation/views/auth_test_screen.dart';
 
 // Global navigator key for GoRouter
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
