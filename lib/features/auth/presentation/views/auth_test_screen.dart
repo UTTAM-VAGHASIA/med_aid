@@ -465,6 +465,7 @@ class _AuthTestScreenState extends State<AuthTestScreen> {
 
   Widget _buildProfileCompletionSection() {
     return Obx(() {
+      // ignore: unused_local_variable
       final isProfileMode =
           controller.authMode.value == AuthMode.completeProfile;
 
