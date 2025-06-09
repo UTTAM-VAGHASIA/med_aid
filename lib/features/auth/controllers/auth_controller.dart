@@ -280,9 +280,8 @@ class AuthController extends GetxController {
         'id': currentUser.id, // Use the user ID from auth as the profile ID
         'first_name': firstNameController.text,
         'last_name': lastNameController.text,
-        'birthdate': birthdateController.text.isNotEmpty ? birthdateController.text : null,
-        'full_name': '${firstNameController.text} ${lastNameController.text}',
-        'phone': currentUser.phone,
+        'birth_date': birthdateController.text.isNotEmpty ? birthdateController.text : null,
+        'phone_number': currentUser.phone,
         'updated_at': DateTime.now().toIso8601String(),
       };
 
