@@ -81,7 +81,7 @@ class TransitionController extends GetxController with GetSingleTickerProviderSt
     _startContainerBreathingAnimation();
     
     // Wait for animations to complete
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 300));
     isAnimatingIn.value = false;
     debugPrint("TransitionController: show completed");
   }
@@ -123,7 +123,7 @@ class TransitionController extends GetxController with GetSingleTickerProviderSt
   // Creates a subtle "breathing" effect for the containers
   void _startContainerBreathingAnimation() {
     debugPrint("TransitionController: breathing animation started");
-    Timer.periodic(const Duration(seconds: 3), (timer) {
+    Timer.periodic(const Duration(seconds: 2), (timer) {
       if (!isVisible.value) {
         debugPrint("TransitionController: breathing animation stopped");
         timer.cancel();
@@ -131,7 +131,7 @@ class TransitionController extends GetxController with GetSingleTickerProviderSt
       }
       
       // Create a breathing effect by oscillating between 0 and 1
-      containerBreathingValue.value = containerBreathingValue.value == 0 ? 1 : 0;
+      containerBreathingValue.value = containerBreathingValue.value == 0 ? 2 : 0;
     });
   }
   
@@ -142,7 +142,7 @@ class TransitionController extends GetxController with GetSingleTickerProviderSt
     await Future.delayed(const Duration(milliseconds: 200));
     debugPrint("TransitionController: navigation callback called");
     navigationCallback();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 200));
     await hide();
     debugPrint("TransitionController: transitionBetweenPages completed");
   }
