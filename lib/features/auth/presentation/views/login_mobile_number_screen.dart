@@ -217,7 +217,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                 ElevatedButton.icon(
                   onPressed: _handleGoogleLogin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: Colors.black87,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
