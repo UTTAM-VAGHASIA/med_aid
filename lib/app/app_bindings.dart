@@ -4,6 +4,7 @@ import 'package:med_aid/app/app_router.dart';
 import 'package:med_aid/core/services/deep_link_service.dart';
 import 'package:med_aid/features/splash/bindings/splash_binding.dart';
 import 'package:med_aid/core/controllers/transition_controller.dart';
+import 'package:med_aid/features/auth/bindings/auth_binding.dart';
 
 class AppBindings extends Bindings {
   @override
@@ -20,5 +21,6 @@ class AppBindings extends Bindings {
     
     // Register feature bindings
     SplashBinding().dependencies();
+    AuthBinding().dependencies();
   }
 }

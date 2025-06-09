@@ -89,7 +89,8 @@ class AppRouter {
       // Global redirect logic for authentication
       redirect: (context, state) {
         // Skip auth checks for auth-test screen
-        if (state.matchedLocation == '/auth-test') {
+        if (state.matchedLocation == '/auth-test' || 
+            state.matchedLocation == '/mobile-number') {
           return null;
         }
         
