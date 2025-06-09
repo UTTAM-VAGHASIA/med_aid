@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "623834511492",
+    "project_id": "med-aid-462319",
+    "storage_bucket": "med-aid-462319.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:623834511492:android:d425173a89ee4d08ac6ad1",
+        "android_client_info": {
+          "package_name": "com.example.med_aid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "623834511492-pvppmd20q9n884c6vgjquanfotbgemn1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.med_aid",
+            "certificate_hash": "e5c94326e05a342210690da0ad9544e4c22caac4"
+          }
+        },
+        {
+          "client_id": "623834511492-snrv3jv0v6aprdq6dc2f6fea891hv0hi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.med_aid",
+            "certificate_hash": "371cdfc7dd316ed87fdb14d1f9c34d5d52a9d9a1"
+          }
+        },
+        {
+          "client_id": "623834511492-19iqtda3tu04r0qd1jr40etdjr2il7kh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDS3WWvYd2WHm_1Pxvja7GvvkMxiWN5FjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "623834511492-19iqtda3tu04r0qd1jr40etdjr2il7kh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "623834511492-afv7joqev27irmmluohcb7lrq5jbslhp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.medAid"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,1281 @@
+﻿Building MED AID: A Comprehensive Flutter Developer Guide (Flutter 3.32.0, forui, Supabase, GetX, go_router)
+Table of Contents
+1. Introduction
+2. Project Setup & Theming
+3. Dependencies
+4. Supabase Backend Setup
+5. Navigation Setup with go_router
+6. Screen-by-Screen Implementation
+   * 6.1. Animated Splash Screen
+   * 6.2. Authentication Screen (Login/Signup)
+   * 6.3. Location Selection Screen
+   * 6.4. Equipment Browser (Home Screen)
+7. Best Practices & Advanced Considerations
+8. Conclusion
+________________
+1. Introduction
+The MED AID application is envisioned as a vital digital platform designed to bridge the gap between individuals and organizations in need of free medical equipment and those willing to donate or provide it. Its core purpose is to streamline the process of finding and acquiring essential healthcare resources, thereby serving a critical community need. The demonstration application will meticulously implement a user journey that begins with an animated splash screen, proceeds through a robust authentication process, allows for location selection, and culminates in a categorized equipment browser. This guide provides a comprehensive, step-by-step approach for developers to build this functional and polished demo from scratch.
+The application’s foundation rests upon a carefully selected modern technical stack. Flutter 3.32.0 serves as the primary UI toolkit, enabling cross-platform development from a single codebase.1 For user interface design, the forui package is employed, offering a collection of beautifully crafted, minimalistic widgets that promote a clean and intuitive user experience.2 The backend infrastructure and authentication services are powered by Supabase, an open-source Backend-as-a-Service (BaaS) that provides a PostgreSQL database, flexible authentication options, and real-time capabilities.4 For efficient state management, dependency injection, and reactive programming, the lightweight GetX framework is integrated.6 Finally, go_router handles all navigation within the application, offering a declarative, URL-based API for seamless screen transitions and deep linking.9
+Targeting Flutter 3.32.0, as specified for a June 2025 project date, offers distinct advantages for the MED AID application. This version, released in May 2025, represents a significant update focused on performance, UI refinements, and developer workflow enhancements.1 A key improvement is the integration of the Impeller rendering engine, which substantially boosts rendering speed on both iOS and Android, resulting in smoother animations and reduced latency.1 This directly contributes to the "polished" user experience required for the demo, particularly for elements like the animated splash screen. The updated Material theme system in Flutter 3.32.0 provides finer control over theme data, which is highly beneficial for maintaining UI consistency when working with a comprehensive UI library like forui.1 Furthermore, Dart 3.8, bundled with this Flutter release, includes enhanced code formatting, leading to cleaner code diffs and promoting consistent coding styles across the project.11 An internal re-architecture in Flutter 3.32.0 merges UI and Platform threads, aiming to reduce communication overhead and improve overall performance, although developers should be mindful of potential performance impacts if native platform code becomes a bottleneck.11
+The selection of Flutter 3.32.0 and the forui UI library creates a powerful combination for the MED AID application's performance and visual appeal. Flutter 3.32.0's core performance enhancements, particularly through the Impeller engine, directly contribute to smoother animations and lower latency on mobile platforms.1 This foundational improvement is then complemented by forui's design philosophy, which emphasizes beautifully crafted, minimalistic widgets.2 The library's explicit requirement for Flutter 3.32.0+ ensures full compatibility and leverages the latest framework optimizations.2 This alignment means the application inherently benefits from a responsive and visually pleasing interface without extensive manual optimization, directly supporting the goal of a "polished, functional demo." The internal merging of UI and Platform threads further reinforces this commitment to reduced latency and improved overall responsiveness.11
+For the backend, the choice of Supabase as a Backend-as-a-Service (BaaS) is strategically advantageous for a demo application of this scope. Supabase is characterized as an "open-source Firebase alternative" that simplifies backend development by providing a managed PostgreSQL database, authentication, and real-time features without requiring deep backend expertise.5 For a demo application with a defined user flow encompassing authentication, location services, and data browsing, a BaaS significantly accelerates development. It abstracts away the complexities of server management, database provisioning, and API creation, allowing Flutter developers to concentrate primarily on the frontend and core application logic. The "scalable" nature of Supabase also implies that if the MED AID demo progresses to a production application, the underlying backend infrastructure is already robust enough to handle increased user loads and data volumes.5 This approach minimizes initial setup overhead and provides a solid foundation for future growth.
+2. Project Setup & Theming
+Establishing a well-organized project structure from the outset is fundamental for the maintainability, scalability, and collaborative efficiency of the MED AID application.12 A logical directory layout ensures that different components of the application are clearly separated by concern, making it easier for developers to locate, understand, and modify code, and to onboard new team members.
+The recommended lib/ directory organization follows a layered, feature-first approach, drawing inspiration from MVVM (Model-View-ViewModel) principles and adapting them for GetX and go_router:
+* lib/main.dart: This file serves as the application's primary entry point. It is responsible for global initializations, including Flutter's widget binding, Supabase client setup, and the configuration of GetMaterialApp.router which integrates both GetX and go_router for routing and state management.
+* lib/app/: This directory encapsulates core application-wide configurations and services that are essential for the entire application lifecycle.
+   * app_config.dart: Manages environment variables and global constants, promoting a single source of truth for configuration.
+   * app_bindings.dart: Contains global GetX bindings, ensuring that essential services and controllers are initialized and made available throughout the application via dependency injection.
+   * app_router.dart: Centralizes the go_router configuration, defining all application routes and implementing global redirection logic, particularly for authentication.
+   * app_theme.dart: Houses the custom forui theme definitions (FThemeData) for both light and dark modes, ensuring consistent UI styling across the application.
+* lib/core/: This layer is dedicated to shared resources, utilities, and services that are utilized across multiple features, preventing code duplication and promoting reusability.14
+   * services/: Contains abstract wrappers around external APIs or platform services, such as supabase_service.dart for all Supabase interactions and location_service.dart for geolocation.
+   * utils/: Provides helper functions, application-wide constants, and logging mechanisms.
+   * widgets/: Stores generic, reusable UI components that are not specific to forui or a single feature.
+   * models/: Defines core data models that are shared across different parts of the application (e.g., user_profile.dart, equipment_category.dart, equipment_item.dart).
+* lib/features/: This is the modularized section of the application, where code is organized by distinct features (e.g., auth, splash, location, equipment). Each feature subdirectory ([feature_name]/) maintains a consistent internal structure:
+   * bindings/: GetX bindings specific to the feature, initializing its controllers and local dependencies.
+   * controllers/: GetX controllers responsible for managing the feature's specific state and business logic.
+   * data/: The data layer components, including repositories/ (for handling data logic like caching and error handling) and providers/ (for direct API calls to Supabase or other data sources).
+   * models/: Data models specific to the feature.
+   * presentation/: Contains the UI components for the feature, subdivided into views/ (screens) and widgets/ (feature-specific UI elements).
+This structured approach adheres to the principle of separation of concerns 13, ensuring that UI logic, business logic, and data handling are distinct. This clarity enhances testability, simplifies debugging, and makes the codebase significantly easier to scale and maintain over time.12 Consistent naming conventions, such as snake_case for file and folder names, further contribute to code readability and organization.12
+Integrating forui for UI Consistency
+The forui library is a key component for achieving the desired polished and minimalistic aesthetic for the MED AID application. It provides a rich set of beautifully designed widgets and includes a bundled CLI tool to streamline theme generation and styling boilerplate.2 A critical compatibility note is that forui 0.12.0+ specifically requires Flutter 3.32.0+ 2, which perfectly aligns with the project's specified Flutter version.
+To integrate forui, the following dependencies must be added to pubspec.yaml:
+
+
+YAML
+
+
+
+
+dependencies:
+ flutter:
+   sdk: flutter
+ forui: ^0.12.0 # Minimalistic UI library, compatible with Flutter 3.32.0+
+ forui_assets: ^0.12.0 # Bundled assets like icons and fonts for forui widgets
+ forui_hooks: ^0.12.0 # Optional: for first-class Flutter Hooks integration with forui controllers
+
+After adding these, run flutter pub get to download and link the packages.16
+The 'Zinc' theme has been chosen for MED AID due to its clean, modern, and soothing aesthetic, which is highly suitable for a healthcare application.17 forui provides predefined themes like 'Zinc' that can be accessed via FThemes.zinc.light or FThemes.zinc.dark.18 The forui CLI tool, by running dart run forui theme create zinc-light, can generate a base theme file that can then be customized to fit specific branding requirements.18 FThemeData is the central class for theme configuration, allowing granular control over color schemes (FColors), typography (FTypography), and other style properties.18
+Use Default theme that forui provides for MED AID
+
+The main.dart file serves as the central configuration hub. It is critical to call WidgetsFlutterBinding.ensureInitialized() first to ensure that Flutter's widget binding is fully initialized before any plugins are utilized.19 Following this, environment variables (such as Supabase URL and Anon Key) are loaded using flutter_dotenv, a best practice for separating sensitive configuration from the codebase.21 The Supabase client is then initialized with these variables before runApp is called, ensuring the backend connection is established early in the application lifecycle.19
+To integrate GetX and go_router, GetMaterialApp.router is used. This special widget combines GetX's capabilities for state management and dependency injection with go_router's declarative navigation.6 The forui theme is applied by wrapping the child of GetMaterialApp.router's builder with the FTheme widget. It is important to convert the FThemeData to a standard ThemeData object using toThemeData() when assigning it to the GetMaterialApp.router's theme property. This ensures that both forui widgets and any standard Material widgets used within the application consistently adhere to the chosen theme.18
+An example of lib/main.dart setup:
+
+
+Dart
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:forui/forui.dart';
+import 'package:med_aid/app/app_theme.dart';
+import 'package:med_aid/app/app_router.dart'; // Our AppRouter class
+import 'package:med_aid/app/app_bindings.dart'; // Global bindings
+
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
+ WidgetsFlutterBinding.ensureInitialized();
+
+ // Load environment variables for secure configuration management
+ await dotenv.load(fileName: ".env"); // [21, 22]
+
+ // Initialize Supabase client with loaded environment variables
+ await Supabase.initialize(
+   url: dotenv.env!, // [19, 20]
+   anonKey: dotenv.env!, // [19, 20]
+ );
+
+ // Initialize global GetX bindings for services and controllers
+ AppBindings().dependencies();
+
+ runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+ const MyApp({super.key});
+
+ @override
+ Widget build(BuildContext context) {
+   // The GoRouter instance is created in app_router.dart
+   final AppRouter appRouter = Get.find<AppRouter>();
+
+   return GetMaterialApp.router( // Integrates GetX state management with GoRouter
+     debugShowCheckedModeBanner: false,
+     title: 'MED AID',
+     theme: medAidLightTheme.toThemeData(), // Apply light theme, converting FThemeData to ThemeData
+     darkTheme: medAidDarkTheme.toThemeData(), // Apply dark theme
+     themeMode: ThemeMode.system, // Dynamically switch based on system settings
+     routerConfig: appRouter.router, // Pass the configured GoRouter instance
+     builder: (context, child) {
+       return FTheme( // Apply forui theme to all widgets
+         data: Theme.of(context).brightness == Brightness.light? medAidLightTheme : medAidDarkTheme,
+         child: child!, // Ensure the child widget is not null
+       );
+     },
+   );
+ }
+}
+
+The approach of using flutter_dotenv for environment variables and centralizing configuration in app_config.dart (or directly in main.dart) is a robust practice. Storing sensitive API keys directly within the application's source code is a security vulnerability, as they can be extracted.21 By loading these from a .env file, which should be excluded from version control via .gitignore, the application ensures that configuration is separate from the code and can be easily managed across different deployment environments (development, staging, production).21 This method provides a single, easily modifiable source for critical application parameters, enhancing both security and deployment flexibility.
+3. Dependencies
+A well-defined pubspec.yaml file is crucial for any Flutter project, as it lists all required packages and their versions, ensuring project stability and reproducibility.16 For the MED AID application, a comprehensive set of dependencies has been identified to support UI, backend, state management, routing, and device capabilities. It is a standard practice to use the caret syntax (^) for version constraints (e.g., package_name: ^1.0.0), which allows flutter pub get to fetch compatible minor and patch updates while preventing unintended breaking changes from major versions.16 After any modification to pubspec.yaml, running flutter pub get is necessary to download and link the packages.16 For plugins that include platform-specific native code, a full application restart (not just hot reload or hot restart) might be required after adding them to avoid MissingPluginException errors.16 This is particularly relevant for packages like supabase_flutter, geolocator, and image_picker.
+The following table provides a comprehensive overview of the required packages for the MED AID application:
+
+
+Package Name
+	Latest Recommended Version (as of June 2025)
+	Purpose
+	flutter_dotenv
+	^5.1.0
+	Loads environment variables (e.g., Supabase keys) from a .env file, crucial for secure configuration management.21
+	supabase_flutter
+	^2.0.0
+	The official Flutter client for Supabase, providing a convenient interface for authentication, database interactions, and real-time features.19
+	get
+	^4.6.6
+	The GetX package, a lightweight micro-framework for state management, dependency injection, and reactive programming, reducing boilerplate code.6
+	go_router
+	^13.2.0
+	A declarative routing package for Flutter's Navigator 2.0, enabling URL-based navigation, deep linking, and sophisticated auth-based redirection.9
+	forui
+	^0.12.0
+	The primary UI component library, offering a set of beautifully designed, minimalistic widgets for a polished user interface.2
+	geolocator
+	^11.0.0
+	Accesses device location services, enabling features like auto-detection of user location and distance calculations between points.26
+	image_picker
+	^1.1.0
+	Allows users to pick images from the device's gallery or camera, useful for user profile avatars or equipment images.16
+	cached_network_image
+	^3.3.1
+	Efficiently loads and caches network images, improving performance and user experience by reducing load times and bandwidth usage.29
+	intl
+	^0.19.0
+	Provides internationalization and localization utilities, essential for formatting dates, times, and numbers according to regional standards.
+	url_launcher
+	^6.2.0
+	A Flutter plugin for launching URLs, enabling the app to open external links (e.g., contact information for NGOs) in a browser or other applications.
+	shared_preferences
+	^2.2.2
+	A simple key-value storage solution for persisting small amounts of data locally, such as user preferences or first-time launch flags.
+	The selection of package versions is critical to ensure compatibility with Flutter 3.32.0. The forui library explicitly states its requirement for Flutter 3.32.0+ 2, highlighting the importance of verifying compatibility for all dependencies. Older package versions might not fully leverage new Flutter features or could contain deprecated APIs, potentially leading to warnings or runtime issues.1 Given Dart 3.8's formatter changes 11, it is also important that packages are up-to-date with the language SDK, which is generally handled by using recent, stable versions. When setting up the project, developers should execute flutter pub get and flutter pub upgrade to ensure they retrieve the latest compatible versions within the specified constraints.16
+The inclusion of certain utility packages, such as image_picker and cached_network_image, represents a forward-thinking approach to building a comprehensive and polished application. While the core user query focuses on finding equipment, a "polished, functional demo" often implies common app features beyond the bare minimum. image_picker is not strictly required for browsing equipment but is invaluable for features like user profile avatars or if the application were to expand to allow users to post equipment with images.16 Similarly, cached_network_image is essential for performance in an image-rich application, ensuring that equipment listings and user avatars load quickly and efficiently, enhancing the overall user experience.30 These strategic inclusions provide a more complete foundation, anticipating natural extensions of a "MED AID" application and demonstrating best practices for robust app development.
+4. Supabase Backend Setup
+Supabase serves as the robust backend for the MED AID application, providing a powerful PostgreSQL database, flexible authentication, and real-time capabilities.4 Setting up the Supabase project and defining its schema is a foundational step.
+Step-by-Step Supabase Project Creation
+1. Create a Supabase Account: Navigate to supabase.com and sign up for a free account.5
+2. Start a New Project: Once logged in, click the "New Project" button on the dashboard.5
+3. Configure Project Details: Provide a suitable project name (e.g., "med-aid-app"), select a region that is geographically close to your users for optimal performance, and set a strong, secure database password.5
+4. Retrieve API Keys: After the project is provisioned, navigate to your project's settings (typically under "Project Settings" -> "API"). Note down the Project URL and the anon (public) key.19 These values are crucial for connecting your Flutter application to the Supabase backend and will be stored securely using flutter_dotenv in your .env file.21
+Enabling Authentication Providers: Email, Phone, and Google OAuth
+Supabase Auth offers various authentication methods, and for MED AID, Email/Password, Phone (OTP), and Google OAuth are required.
+1. Access Auth Providers: In your Supabase project dashboard, navigate to the "Authentication" section on the left sidebar, then click on the "Providers" tab.
+2. Email/Password Authentication:
+   * Email authentication methods, including Magic Links and Email One-Time Passwords (OTPs), are enabled by default in Supabase Auth.31
+   * Ensure the "Email" provider is toggled "ON" and that "Enable Signups" is also enabled.32
+   * Optionally, customize the email templates for confirmation, invitation, magic links, and password reset under the "Email Templates" section.33
+3. Phone (OTP) Authentication:
+   * Toggle "ON" the "Phone" provider in the Auth Providers section.34
+   * To send SMS OTPs, you must configure an SMS provider. Supabase supports providers like Twilio, MessageBird, Vonage, and TextLocal.34 Select your preferred provider and enter the required API Key and Sender Name.
+   * Be aware that by default, OTPs expire after 1 hour, and a user can request an OTP only once every 60 seconds.31
+4. Google OAuth Authentication:
+   * Google Cloud Console Setup:
+      * Go to the Google Cloud Platform Console and create a new project if you don't have one.36
+      * Navigate to "APIs & Services" -> "Credentials".
+      * Click "Create Credentials" and select "OAuth client ID".36
+      * If prompted, configure your "OAuth consent screen".36
+      * For "Application type", select "Web application".36
+      * Under "Authorized JavaScript origins", add your Supabase project URL (e.g., https://[your-project-ref].supabase.co).36
+      * Under "Authorized redirect URIs", add the Supabase callback URL: https://[your-project-ref].supabase.co/auth/v1/callback.36
+      * Upon creation, you will be provided with a Client ID and Client Secret. Copy these values.36
+   * Supabase Dashboard Configuration:
+      * Return to your Supabase project dashboard, navigate to "Authentication" -> "Providers".
+      * Find "Google" in the list of OAuth providers and toggle it "ON".36
+      * Paste the copied Google Client ID and Client Secret into the respective fields.36
+      * Click "Save" to apply the changes.
+Database Schema Design and SQL Implementation
+Supabase leverages PostgreSQL, and it is highly recommended to manage database schemas declaratively for version control and consistency.38 This involves defining your table structures in SQL files within a supabase/schemas/ directory, which can then be used to generate migrations via the Supabase CLI.
+profiles Table Schema
+This table is designed to store additional user-specific data that is not directly managed by Supabase's auth.users table. This separation is a best practice for security and data management, as the auth.users table contains sensitive authentication details and should not be directly modified or exposed publicly.40 The profiles table will be linked to auth.users via a foreign key.
+
+
+SQL
+
+
+
+
+CREATE TABLE public.profiles (
+   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+   full_name TEXT,
+   phone_number TEXT UNIQUE, -- Optional: if phone is not the primary auth method
+   location_lat DOUBLE PRECISION,
+   location_lon DOUBLE PRECISION,
+   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security (RLS) for fine-grained access control
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Users can view their own profile data
+CREATE POLICY "Can view own profile" ON public.profiles
+FOR SELECT TO authenticated USING (auth.uid() = id);
+
+-- RLS Policy: Users can update their own profile data
+CREATE POLICY "Can update own profile" ON public.profiles
+FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+Table: Supabase profiles Table Schema
+
+
+Column Name
+	Data Type
+	Constraints
+	Purpose
+	id
+	UUID
+	PRIMARY KEY, REFERENCES auth.users(id) ON DELETE CASCADE
+	Unique identifier for the user profile, linked to the auth.users table. If a user is deleted from auth.users, their profile is also deleted.40
+	full_name
+	TEXT
+	
+
+	The user's full display name.
+	phone_number
+	TEXT
+	UNIQUE (Optional)
+	The user's phone number, if not used as the primary authentication method. It is marked as unique to prevent duplicate entries.42
+	location_lat
+	DOUBLE PRECISION
+	
+
+	Latitude coordinate of the user's last known or selected location.42
+	location_lon
+	DOUBLE PRECISION
+	
+
+	Longitude coordinate of the user's last known or selected location.42
+	created_at
+	TIMESTAMP WITH TIME ZONE
+	DEFAULT NOW()
+	Timestamp when the profile record was created.42
+	updated_at
+	TIMESTAMP WITH TIME ZONE
+	DEFAULT NOW()
+	Timestamp when the profile record was last updated.42
+	equipment_categories Table Schema
+This table will store the different categories of free medical equipment available through the platform, allowing for organized browsing.
+
+
+SQL
+
+
+
+
+CREATE TABLE public.equipment_categories (
+   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+   name TEXT NOT NULL UNIQUE,
+   description TEXT,
+   icon_url TEXT, -- Optional: URL to an icon representing the category
+   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.equipment_categories ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Public can read equipment categories
+CREATE POLICY "Public can read equipment categories" ON public.equipment_categories
+FOR SELECT TO anon, authenticated USING (true);
+
+Table: Supabase equipment_categories Table Schema
+
+
+Column Name
+	Data Type
+	Constraints
+	Purpose
+	id
+	UUID
+	PRIMARY KEY, DEFAULT gen_random_uuid()
+	Unique identifier for each equipment category.42
+	name
+	TEXT
+	NOT NULL, UNIQUE
+	The name of the equipment category (e.g., "Mobility Aids"), must be unique and not null.42
+	description
+	TEXT
+	
+
+	A brief description of the category.
+	icon_url
+	TEXT
+	
+
+	An optional URL to an image or icon representing the category.43
+	created_at
+	TIMESTAMP WITH TIME ZONE
+	DEFAULT NOW()
+	Timestamp when the category record was created.42
+	updated_at
+	TIMESTAMP WITH TIME ZONE
+	DEFAULT NOW()
+	Timestamp when the category record was last updated.42
+	equipment_items Table Schema
+This table will hold the detailed information for each piece of medical equipment available for donation.
+
+
+SQL
+
+
+
+
+CREATE TABLE public.equipment_items (
+   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+   name TEXT NOT NULL,
+   description TEXT,
+   category_id UUID REFERENCES public.equipment_categories(id) ON DELETE RESTRICT, -- Foreign key to categories
+   posted_by UUID REFERENCES public.profiles(id) ON DELETE CASCADE, -- Foreign key to user who posted
+   status TEXT DEFAULT 'available' NOT NULL, -- e.g., 'available', 'reserved', 'taken'
+   condition TEXT, -- e.g., 'new', 'good', 'fair'
+   image_url TEXT, -- URL for equipment image
+   location_lat DOUBLE PRECISION,
+   location_lon DOUBLE PRECISION,
+   pickup_address TEXT,
+   contact_info TEXT, -- e.g., phone, email, or link to NGO profile
+   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.equipment_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Public can read available equipment
+CREATE POLICY "Public can read available equipment items" ON public.equipment_items
+FOR SELECT TO anon, authenticated USING (status = 'available');
+
+-- RLS Policy: Authenticated users can insert equipment (e.g., NGOs or verified individuals)
+CREATE POLICY "Authenticated users can insert equipment" ON public.equipment_items
+FOR INSERT TO authenticated WITH CHECK (auth.uid() = posted_by);
+
+-- RLS Policy: Users can update their own posted equipment
+CREATE POLICY "Users can update own equipment" ON public.equipment_items
+FOR UPDATE TO authenticated USING (auth.uid() = posted_by) WITH CHECK (auth.uid() = posted_by);
+
+-- RLS Policy: Users can delete their own posted equipment
+CREATE POLICY "Users can delete own equipment" ON public.equipment_items
+FOR DELETE TO authenticated USING (auth.uid() = posted_by);
+
+Table: Supabase equipment_items Table Schema
+
+
+Column Name
+	Data Type
+	Constraints
+	Purpose
+	id
+	UUID
+	PRIMARY KEY, DEFAULT gen_random_uuid()
+	Unique identifier for each equipment item.42
+	name
+	TEXT
+	NOT NULL
+	The name of the equipment item (e.g., "Wheelchair").42
+	description
+	TEXT
+	
+
+	A detailed description of the equipment.
+	category_id
+	UUID
+	REFERENCES public.equipment_categories(id) ON DELETE RESTRICT
+	Foreign key linking to the equipment_categories table, ensuring items belong to a valid category. ON DELETE RESTRICT prevents category deletion if items exist.44
+	posted_by
+	UUID
+	REFERENCES public.profiles(id) ON DELETE CASCADE
+	Foreign key linking to the profiles table, identifying the user or NGO who posted the item. ON DELETE CASCADE ensures items are removed if the poster's profile is deleted.44
+	status
+	TEXT
+	DEFAULT 'available', NOT NULL
+	Current availability status of the item (e.g., 'available', 'reserved', 'taken').
+	condition
+	TEXT
+	
+
+	The physical condition of the equipment (e.g., 'new', 'good', 'fair').
+	image_url
+	TEXT
+	
+
+	URL for an image of the equipment item.43
+	location_lat
+	DOUBLE PRECISION
+	
+
+	Latitude coordinate where the equipment is located.
+	location_lon
+	DOUBLE PRECISION
+	
+
+	Longitude coordinate where the equipment is located.
+	pickup_address
+	TEXT
+	
+
+	Full address for equipment pickup.
+	contact_info
+	TEXT
+	
+
+	Contact details for the poster (e.g., phone, email, or link to NGO profile).
+	created_at
+	TIMESTAMP WITH TIME ZONE
+	DEFAULT NOW()
+	Timestamp when the equipment item was posted.42
+	updated_at
+	TIMESTAMP WITH TIME ZONE
+	DEFAULT NOW()
+	Timestamp when the equipment item was last updated.42
+	Automating User Profile Creation with a PostgreSQL Trigger (on_auth_user_created)
+To ensure data consistency and a seamless user experience, a PostgreSQL trigger will automatically create a corresponding entry in the public.profiles table whenever a new user signs up via Supabase Auth. This automation eliminates the need for manual profile creation on the client side after a successful signup.
+
+
+SQL
+
+
+
+
+-- Create the Trigger Function
+-- This function will be executed when a new user is created in auth.users.
+-- It inserts a new row into the 'profiles' table using the 'NEW' record variable,
+-- which contains data from the newly inserted user.
+CREATE OR REPLACE FUNCTION public.handle_new_user_profile()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER -- Ensures the function runs with the privileges of the creator, not the user triggering it
+AS $$
+BEGIN
+ -- Insert into public.profiles using data from the new auth.users record
+ -- NEW.id refers to the new user's UUID
+ -- NEW.email refers to the new user's email
+ -- NEW.raw_user_meta_data->>'full_name' attempts to extract 'full_name' if provided during signup
+ INSERT INTO public.profiles (id, full_name, email, created_at, updated_at)
+ VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name', NEW.email, NOW(), NOW());
+ RETURN NEW; -- For AFTER row-level triggers, the function must return NEW
+END;
+$$;
+
+-- Create the Trigger Object
+-- This trigger fires AFTER an INSERT operation on the 'auth.users' table.
+-- It executes the 'handle_new_user_profile' function for each new row inserted.
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_new_user_profile();
+
+The implementation of Row Level Security (RLS) across all tables is a foundational security measure within Supabase's PostgreSQL database.4 RLS is not merely an optional feature but a critical mechanism for enforcing data access policies directly at the database level. By defining policies such as "Public can read available equipment" or "Users can update own profile" 41, the application inherently controls who can access or modify data, regardless of the client-side logic. This provides a robust defense against unauthorized data exposure or manipulation, even if client-side code is compromised. The use of auth.uid() within RLS policies is central to linking authenticated user sessions to their permissible data operations, ensuring that users interact only with the data they are authorized to access.
+Furthermore, the strategic use of PostgreSQL triggers and foreign keys ensures robust data consistency within the MED AID database. The on_auth_user_created trigger, for instance, automatically populates the public.profiles table when a new user registers through Supabase Auth.40 This automation prevents orphaned user data and ensures that every authenticated user has a corresponding profile record, streamlining backend processes and reducing the likelihood of data inconsistencies. Similarly, the implementation of foreign keys in the equipment_items table, linking to equipment_categories and profiles, enforces referential integrity.44 This means an equipment item cannot exist without a valid category or a valid poster, maintaining a reliable and well-structured data model. These SQL definitions are not just about creating tables; they establish a relational data model that automates crucial backend processes and ensures data integrity, simplifying application logic and enhancing overall system reliability.
+5. Navigation Setup with go_router
+go_router provides a declarative and URL-based approach to navigation in Flutter, leveraging the Router API for a flexible and powerful routing solution.10 For the MED AID application, go_router will manage the entire navigation flow, including authentication-based redirection and deep linking.
+Defining the GoRouter Configuration
+The GoRouter instance is typically configured once at the application's startup, often within main.dart or a dedicated routing file like app_router.dart. It uses GetMaterialApp.router to integrate seamlessly with GetX.47 A GlobalKey<NavigatorState> can be used to perform navigation actions from contexts where a BuildContext might not be readily available, such as within a GetX controller.48
+The lib/app/app_router.dart file will house the GoRouter configuration:
+
+
+Dart
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:get/get.dart'; // For.listenable() extension and Get.rootDelegate
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Global navigator key for GoRouter, useful for navigation actions outside of BuildContext
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+// Enum for route names to avoid hardcoding strings and ensure type safety
+enum AppRoute {
+ splash,
+ auth,
+ locationSelection,
+ home,
+ equipmentDetail, // Example for future expansion, if a detail screen is added
+}
+
+class AppRouter {
+ // Expose the GoRouter instance
+ GoRouter get router => _goRouter;
+
+ // Lazily initialize the GoRouter instance
+ late final GoRouter _goRouter = GoRouter(
+   navigatorKey: _rootNavigatorKey, // Assign the global navigator key
+   initialLocation: '/splash', // The starting path of the application
+   routes:!,
+     //   ),
+     // ),
+   ],
+   // Global redirect logic, executed on every new navigation event and when refreshListenable notifies
+   redirect: (context, state) {
+     final session = Supabase.instance.client.auth.currentSession;
+     final bool loggedIn = session!= null;
+     final bool loggingIn = state.matchedLocation == '/auth';
+     final bool isSplash = state.matchedLocation == '/splash';
+
+     // If the user is not logged in and is trying to access a protected route (not auth or splash)
+     if (!loggedIn &&!loggingIn &&!isSplash) {
+       return '/auth'; // Redirect to the authentication screen
+     }
+     // If the user is logged in and is trying to access the authentication or splash screen
+     if (loggedIn && (loggingIn |
+| isSplash)) {
+       return '/home'; // Redirect to the home screen
+     }
+     // No redirection needed, allow the navigation to proceed
+     return null;
+   },
+   // This listener causes the router to re-evaluate its current route and redirection logic
+   // whenever the Supabase authentication state changes (e.g., sign-in, sign-out)
+   refreshListenable: Supabase.instance.client.auth.onAuthStateChange.stream.map((event) => event.session).listenable()[49, 50]
+   debugLogDiagnostics: true, // Enable for detailed logging of navigation events during development [47]
+ );
+}
+
+Implementing Auth-Based Redirection Logic
+go_router's redirect property is a powerful feature for controlling navigation flow based on application state, particularly useful for authentication.9 This function is invoked on every new navigation event and, crucially, whenever the refreshListenable notifies the router of a state change.47
+To achieve reactive authentication-based redirection, Supabase's Supabase.instance.client.auth.onAuthStateChange.stream is leveraged. This stream emits events whenever the user's authentication status changes (e.g., SIGNED_IN, SIGNED_OUT, USER_UPDATED).20 By converting this stream into a Listenable (using GetX's stream.listenable() extension) and passing it to go_router's refreshListenable property, the router is automatically prompted to re-evaluate its redirect logic whenever a session event occurs.47 This ensures that the navigation state is always synchronized with the user's authentication status.
+The redirect logic within app_router.dart is structured as follows:
+1. Check Authentication Status: It first determines if a user is currently logged in by checking Supabase.instance.client.auth.currentSession.
+2. Identify Current Location: It identifies if the user is attempting to navigate to the authentication (/auth) or splash (/splash) screens.
+3. Conditional Redirection:
+   * If the user is not logged in (!loggedIn) and is trying to access any route other than the authentication or splash screens, they are redirected to /auth.9 This protects all routes that require authentication.
+   * If the user is logged in (loggedIn) but attempts to navigate to the authentication or splash screens (which are typically entry points for unauthenticated users), they are redirected to /home.9 This prevents logged-in users from unnecessarily seeing login/signup forms or the splash screen again.
+   * If none of these conditions are met, null is returned, allowing the navigation to proceed to the requested route.
+Route Definitions: Paths, Names, and Parameters
+For robust and maintainable navigation, go_router supports defining routes with both a path (the URL segment) and a name (a unique identifier for the route).14 Using named routes, especially with an enum like AppRoute, provides type safety and simplifies refactoring, as route changes only need to be updated in one central location.14
+* initialLocation: This property sets the very first path the application attempts to navigate to upon launch, typically the splash screen (/splash).47
+* Path Parameters: For screens that require dynamic data (e.g., an equipment detail screen showing a specific item), path parameters can be defined (e.g., /equipment/:id). The value of these parameters can then be accessed within the builder function via state.pathParameters['id'].14
+Table: go_router Route Paths and Names
+Route Name (from AppRoute enum)
+	Path
+	Corresponding Screen (Placeholder)
+	Purpose
+	splash
+	/splash
+	SplashScreen
+	Initial loading screen, handles app initialization and auth check.
+	auth
+	/auth
+	AuthScreen
+	User authentication (Login/Signup).
+	locationSelection
+	/location-selection
+	LocationSelectionScreen
+	Allows users to select or auto-detect their location.
+	home
+	/home
+	EquipmentBrowserScreen
+	Main application screen, displaying categorized equipment.
+	equipmentDetail (Example)
+	/equipment/:id
+	EquipmentDetailScreen
+	Displays detailed information for a specific equipment item.
+	The implementation of reactive authentication state with go_router's refreshListenable is a cornerstone for secure and user-friendly navigation. By connecting Supabase.instance.client.auth.onAuthStateChange.stream to this listener, the router is dynamically informed of any changes in the user's login status.47 This means that if a user logs in, logs out, or their session expires, the redirect function is automatically re-evaluated, ensuring they are immediately routed to the correct screen (e.g., /home upon successful login, or /auth upon logout).9 This robust mechanism prevents users from being stuck on inappropriate screens or accessing protected content without proper authentication.
+The role of initialLocation and the splash screen in the navigation flow is crucial for a smooth user onboarding experience. Setting initialLocation to /splash ensures that the animated splash screen is the very first thing the user sees upon launching the app.47 This screen's primary function is to perform initial setup tasks, such as Supabase initialization and an immediate authentication status check. Once these tasks are complete (and any splash animation finishes), the splash screen then triggers navigation away from itself using context.goNamed (or Get.rootDelegate.goNamed).52 The global redirect logic in app_router.dart then takes over, evaluating the user's authentication state and directing them to either the /auth screen (if unauthenticated) or the /home screen (if authenticated). This design ensures that the splash screen is only shown once and is removed from the navigation stack, preventing users from accidentally navigating back to it.52 This approach effectively positions the splash screen as a "routing gatekeeper," seamlessly transitioning the user into the appropriate part of the application based on their login status.
+6. Screen-by-Screen Implementation
+This section details the implementation of each core screen in the MED AID application, focusing on the integration of forui for UI, GetX for state management, and Supabase for backend interactions. Illustrative code snippets highlight key integration points and logic.
+6.1. Animated Splash Screen
+The animated splash screen provides a welcoming entry point to the application, showcasing the app's branding while performing essential initializations.
+* Recommended file location: lib/features/splash/presentation/views/splash_screen.dart
+* UI Layout Description (forui components): The SplashScreen will feature a simple, centered layout. An FScaffold provides the basic visual structure.2 Within its body, a Center widget will house the application's logo (e.g., an Image.asset for a local image or CachedNetworkImage if the logo is fetched from a network 30). A subtle FProgress.circular indicator from forui can be placed below the logo to signify loading.2 To create a polished animation, AnimatedOpacity or FadeTransition can be used to fade the logo and text in and out, enhancing the visual appeal.53
+* GetX SplashController for Initialization and Session Check: The SplashController manages the initial application setup and determines the next navigation route based on the user's authentication status.
+   * File Location: lib/features/splash/controllers/splash_controller.dart
+   * Logic:
+Dart
+import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:med_aid/app/app_router.dart'; // Import AppRoute enum
+
+class SplashController extends GetxController {
+ @override
+ void onInit() {
+   super.onInit();
+   _checkAuthStatus(); // Initiate authentication status check on controller initialization
+ }
+
+ Future<void> _checkAuthStatus() async {
+   // Simulate a loading time for the splash screen animation to complete
+   await Future.delayed(const Duration(seconds: 3)); [55]
+
+   // Check the current authentication session with Supabase
+   final session = Supabase.instance.client.auth.currentSession; [20, 50]
+
+   if (session!= null) {
+     // User is authenticated, navigate to the home screen
+     Get.rootDelegate.goNamed(AppRoute.home.name); // Navigate using GoRouter's named routes
+   } else {
+     // User is not authenticated, navigate to the authentication screen
+     Get.rootDelegate.goNamed(AppRoute.auth.name);
+   }
+ }
+}
+
+   * Navigation Logic to Auth or Home Screen: The primary navigation logic based on authentication state is handled by go_router's global redirect function (as detailed in Section 5). The SplashController's role is to trigger this initial check and then initiate navigation away from the splash screen once its animation and internal checks are complete. Using Get.rootDelegate.goNamed ensures that the splash screen route is replaced in the navigation stack, preventing users from navigating back to it.52
+6.2. Authentication Screen (Login/Signup)
+The authentication screen provides users with options to log in or sign up using email, phone, or Google.
+   * Recommended file location: lib/features/auth/presentation/views/auth_screen.dart
+   * UI Layout Description (forui widgets): The AuthScreen will typically use an FScaffold as its base. Authentication forms can be visually grouped within an FCard.2 Input fields for email, password, phone number, and OTP will utilize FTextField.2 Action buttons like "Login", "Sign Up", and "Sign in with Google" will be implemented with FButton.2 A toggle between login and signup modes can be achieved with FRadio or FSwitch.2 Error messages (e.g., invalid credentials, network issues) will be displayed gracefully using FAlert or FToast.2 A FProgress indicator will provide visual feedback during authentication processes.2
+   * GetX AuthController for User Authentication: The AuthController encapsulates all authentication logic, managing user input, interacting with Supabase, and updating the UI state.
+   * File Location: lib/features/auth/controllers/auth_controller.dart
+   * Logic:
+Dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:med_aid/app/app_router.dart';
+import 'package:med_aid/core/services/supabase_service.dart'; // Custom service for Supabase interactions
+
+class AuthController extends GetxController {
+ // Dependency injection for SupabaseService, making it globally accessible
+ final SupabaseService _supabaseService = Get.find<SupabaseService>(); [6, 7]
+
+ // Text editing controllers for form inputs
+ final emailController = TextEditingController();
+ final passwordController = TextEditingController();
+ final phoneController = TextEditingController();
+ final otpController = TextEditingController();
+ final fullNameController = TextEditingController(); // For signup
+
+ // Reactive variables for UI state management
+ var isLoading = false.obs; // Tracks loading state for UI feedback [6, 7]
+ var errorMessage = ''.obs; // Stores and displays authentication error messages [56]
+ var isLoginMode = true.obs; // Toggles between login and signup forms
+ var otpSent = false.obs; // Indicates if an OTP has been sent for phone authentication
+
+ @override
+ void onInit() {
+   super.onInit();
+   // Listen to Supabase authentication state changes to reactively update UI or navigate
+   _supabaseService.onAuthStateChange.listen((data) {
+     final AuthChangeEvent event = data.event;
+     final Session? session = data.session;
+     if (event == AuthChangeEvent.signedIn && session!= null) {
+       // If user successfully signs in, navigate to the home screen.
+       // This is also handled by go_router's refreshListenable, but explicit navigation here
+       // ensures immediate transition if the listener triggers after initial redirect.
+       Get.rootDelegate.goNamed(AppRoute.home.name);
+     } else if (event == AuthChangeEvent.signedOut) {
+       // Clear form fields and reset state upon sign-out
+       emailController.clear();
+       passwordController.clear();
+       phoneController.clear();
+       otpController.clear();
+       fullNameController.clear();
+       isLoading.value = false;
+       errorMessage.value = '';
+     }
+   });
+ }
+
+ @override
+ void onClose() {
+   // Dispose controllers to prevent memory leaks
+   emailController.dispose();
+   passwordController.dispose();
+   phoneController.dispose();
+   otpController.dispose();
+   fullNameController.dispose();
+   super.onClose();
+ }
+
+ // Handles email/password sign-in
+ Future<void> signInWithEmail() async {
+   isLoading.value = true;
+   errorMessage.value = '';
+   try {
+     final AuthResponse res = await _supabaseService.signInWithPassword(
+       email: emailController.text,
+       password: passwordController.text,
+     );
+     if (res.user == null) {
+       // If user is null, it indicates a failure not caught by AuthException
+       errorMessage.value = 'Login failed. Please check your credentials.';
+     }
+     // Successful sign-in is handled by the onAuthStateChange listener
+   } on AuthException catch (e) {
+     errorMessage.value = e.message; // Display specific Supabase authentication errors [57]
+   } catch (e) {
+     errorMessage.value = 'An unexpected error occurred: $e'; // Catch other potential errors
+   } finally {
+     isLoading.value = false; // Reset loading state
+   }
+ }
+
+ // Handles email/password sign-up
+ Future<void> signUpWithEmail() async {
+   isLoading.value = true;
+   errorMessage.value = '';
+   try {
+     final AuthResponse res = await _supabaseService.signUp(
+       email: emailController.text,
+       password: passwordController.text,
+       data: {'full_name': fullNameController.text}, // Pass metadata for the profiles table trigger [41]
+     );
+     if (res.user == null) {
+       errorMessage.value = 'Signup failed.';
+     }
+     // Successful sign-up (and automatic sign-in) is handled by the onAuthStateChange listener
+   } on AuthException catch (e) {
+     errorMessage.value = e.message; // Display specific Supabase authentication errors [33, 58]
+   } catch (e) {
+     errorMessage.value = 'An unexpected error occurred: $e';
+   } finally {
+     isLoading.value = false;
+   }
+ }
+
+ // Handles phone number sign-in (OTP based)
+ Future<void> signInWithPhone() async {
+   isLoading.value = true;
+   errorMessage.value = '';
+   try {
+     if (!otpSent.value) {
+       // If OTP not yet sent, send it
+       await _supabaseService.sendPhoneOtp(phoneController.text); [59]
+       otpSent.value = true;
+       Get.snackbar('OTP Sent', 'Check your phone for the OTP code.'); // Provide user feedback
+     } else {
+       // If OTP already sent, verify it
+       final AuthResponse res = await _supabaseService.verifyPhoneOtp(
+         phone: phoneController.text,
+         token: otpController.text,
+       ); [59]
+       if (res.user == null) {
+         errorMessage.value = 'OTP verification failed.';
+       }
+       // Successful verification is handled by the onAuthStateChange listener
+     }
+   } on AuthException catch (e) {
+     errorMessage.value = e.message;
+   } catch (e) {
+     errorMessage.value = 'An unexpected error occurred: $e';
+   } finally {
+     isLoading.value = false;
+   }
+ }
+
+ // Handles Google OAuth sign-in
+ Future<void> signInWithGoogle() async {
+   isLoading.value = true;
+   errorMessage.value = '';
+   try {
+     await _supabaseService.signInWithGoogle(); [37, 59]
+     // Supabase handles the redirection for OAuth flow; onAuthStateChange will capture the result.
+   } on AuthException catch (e) {
+     errorMessage.value = e.message;
+   } catch (e) {
+     errorMessage.value = 'An unexpected error occurred: $e';
+   } finally {
+     isLoading.value = false;
+   }
+ }
+
+ // Toggles between login and signup modes, clearing errors
+ void toggleLoginSignup() {
+   isLoginMode.value =!isLoginMode.value;
+   errorMessage.value = ''; // Clear any previous errors when switching modes
+ }
+}
+
+   * Supabase Client Integration for Auth Operations:
+A dedicated SupabaseService class (located in lib/core/services/supabase_service.dart) is used to abstract and centralize all interactions with the Supabase client. This promotes a clean separation of concerns, making the authentication logic more modular and testable.13 The service exposes methods that wrap the core Supabase.instance.client.auth calls, such as signInWithPassword 57, signUp 33, and signInWithOAuth.37 Error handling for AuthResponse and AuthException from Supabase is managed within this service or passed up to the controller for UI display.57
+Dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:get/get.dart'; // For GetxService
+
+class SupabaseService extends GetxService { // Extends GetxService for global access and lifecycle management
+ final SupabaseClient _supabaseClient = Supabase.instance.client;
+
+ // Provides a stream of authentication state changes
+ Stream<AuthState> get onAuthStateChange => _supabaseClient.auth.onAuthStateChange;
+
+ // Sign in with email and password
+ Future<AuthResponse> signInWithPassword({required String email, required String password}) async {
+   return await _supabaseClient.auth.signInWithPassword(email: email, password: password); [57]
+ }
+
+ // Sign up with email and password, optionally including user metadata
+ Future<AuthResponse> signUp({required String email, required String password, Map<String, dynamic>? data}) async {
+   return await _supabaseClient.auth.signUp(email: email, password: password, data: data); [33, 58]
+ }
+
+ // Sign out the current user
+ Future<void> signOut() async {
+   await _supabaseClient.auth.signOut(); [20]
+ }
+
+ // Send a One-Time Password (OTP) to a phone number
+ Future<void> sendPhoneOtp(String phone) async {
+   await _supabaseClient.auth.signInWithOtp(phone: phone); [59]
+ }
+
+ // Verify a phone number with an OTP
+ Future<AuthResponse> verifyPhoneOtp({required String phone, required String token}) async {
+   return await _supabaseClient.auth.verifyOTP(type: OtpType.sms, phone: phone, token: token); [59]
+ }
+
+ // Initiate Google OAuth sign-in flow
+ Future<void> signInWithGoogle() async {
+   await _supabaseClient.auth.signInWithOAuth(
+     provider: OAuthProvider.google,
+     redirectTo: 'io.supabase.medaid://login-callback/', // Deep link for redirect [37, 59]
+   );
+ }
+
+ // Get the currently authenticated user
+ User? getCurrentUser() {
+   return _supabaseClient.auth.currentUser; [20]
+ }
+
+ // Update user profile data in the 'profiles' table
+ Future<void> updateUserProfile({required String userId, required Map<String, dynamic> data}) async {
+   await _supabaseClient
+      .from('profiles')
+      .update(data)
+      .eq('id', userId)
+      .execute();
+ }
+}
+
+6.3. Location Selection Screen
+This screen allows users to either automatically detect their current location or manually input an address, which is crucial for finding nearby medical equipment.
+      * Recommended file location: lib/features/location/presentation/views/location_selection_screen.dart
+      * UI Layout Description (forui components): The LocationSelectionScreen will feature an FScaffold with a clear FHeader for the screen title.2 A prominent FButton for "Auto-detect Location" will initiate the geolocation process.2 For manual input, an FTextField will allow users to type in an address.2 During location detection, an FProgress indicator will provide visual feedback.2 Any issues, such as denied permissions or disabled location services, will be communicated via an FAlert.2
+      * GetX LocationController for geolocator Integration: The LocationController handles all logic related to accessing device location, managing permissions, and updating the user's profile with location data.
+      * File Location: lib/features/location/controllers/location_controller.dart
+      * Logic:
+Dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:geolocator/geolocator.dart'; [26, 27]
+import 'package:med_aid/core/services/supabase_service.dart';
+import 'package:med_aid/app/app_router.dart';
+
+class LocationController extends GetxController {
+ final SupabaseService _supabaseService = Get.find<SupabaseService>();
+
+ var isLoading = false.obs; // Reactive loading state
+ var currentAddress = 'Detecting location...'.obs; // Reactive string for displayed address
+ var latitude = Rxn<double>(); // Reactive nullable double for latitude
+ var longitude = Rxn<double>(); // Reactive nullable double for longitude
+ var errorMessage = ''.obs; // Reactive string for error messages
+
+ @override
+ void onInit() {
+   super.onInit();
+   // Optionally, auto-detect location immediately on screen load, or wait for user action
+ }
+
+ // Handles automatic location detection
+ Future<void> detectLocation() async {
+   isLoading.value = true;
+   errorMessage.value = '';
+   try {
+     // Check and request location permissions
+     LocationPermission permission = await Geolocator.checkPermission(); [26, 27]
+     if (permission == LocationPermission.denied) {
+       permission = await Geolocator.requestPermission(); [26, 27]
+       if (permission == LocationPermission.denied) {
+         errorMessage.value = 'Location permissions are denied. Please grant access.';
+         return;
+       }
+     }
+     if (permission == LocationPermission.deniedForever) {
+       errorMessage.value = 'Location permissions are permanently denied. Please enable from app settings.';
+       return;
+     }
+
+     // Check if location services are enabled on the device
+     bool serviceEnabled = await Geolocator.isLocationServiceEnabled(); [26]
+     if (!serviceEnabled) {
+       errorMessage.value = 'Location services are disabled. Please enable them on your device.';
+       // Optionally, open location settings: Geolocator.openLocationSettings();
+       return;
+     }
+
+     // Get the current position with high accuracy and a timeout
+     Position position = await Geolocator.getCurrentPosition(
+       desiredAccuracy: LocationAccuracy.high,
+       timeLimit: const Duration(seconds: 10),
+     ); [26]
+
+     latitude.value = position.latitude;
+     longitude.value = position.longitude;
+     // In a real app, reverse geocoding (e.g., using geocoding package) would convert coords to address
+     currentAddress.value = 'Lat: ${position.latitude.toPrecision(4)}, Lon: ${position.longitude.toPrecision(4)}';
+
+     // Save the detected location to the user's profile in Supabase
+     await _supabaseService.updateUserProfile(
+       userId: _supabaseService.getCurrentUser()!.id, // Assumes user is logged in
+       data: {
+         'location_lat': latitude.value,
+         'location_lon': longitude.value,
+       },
+     );
+
+     // Navigate to the home screen after successful location detection and saving
+     Get.rootDelegate.goNamed(AppRoute.home.name);
+   } catch (e) {
+     errorMessage.value = 'Failed to get location: $e'; // Display any errors during the process
+   } finally {
+     isLoading.value = false; // Always reset loading state
+   }
+ }
+
+ // Handles manual location input (for demo, simplified to just saving coordinates)
+ void setManualLocation(String address, double lat, double lon) async {
+   isLoading.value = true;
+   errorMessage.value = '';
+   try {
+     latitude.value = lat;
+     longitude.value = lon;
+     currentAddress.value = address;
+
+     await _supabaseService.updateUserProfile(
+       userId: _supabaseService.getCurrentUser()!.id,
+       data: {
+         'location_lat': latitude.value,
+         'location_lon': longitude.value,
+       },
+     );
+     Get.rootDelegate.goNamed(AppRoute.home.name);
+   } catch (e) {
+     errorMessage.value = 'Failed to set manual location: $e';
+   } finally {
+     isLoading.value = false;
+   }
+ }
+}
+
+      * Saving User Location to Supabase profiles: The SupabaseService (defined in Section 6.2) includes an updateUserProfile method. This method is responsible for updating the location_lat and location_lon fields in the public.profiles table with the user's detected or manually entered coordinates. This ensures that the user's location preference is persisted and can be used for features like finding nearby equipment.
+6.4. Equipment Browser (Home Screen)
+The Equipment Browser is the core functional screen, allowing users to view and filter available medical equipment.
+         * Recommended file location: lib/features/equipment/presentation/views/equipment_browser_screen.dart
+         * UI Layout Description (forui components): The EquipmentBrowserScreen will use an FScaffold as its base. A prominent FHeader 2 will display the application title and potentially a user profile icon or settings button. A FTextField 2 will serve as a search bar for filtering equipment by name or description. For categorization, FSelect 2 or FTabs 2 can be used to allow users to filter equipment by equipment_categories. The main content area will display a list or grid of equipment_items using ListView.builder or GridView.builder. Each item in the list will be presented within an FCard 2 or FTile 2, showcasing the equipment's image (loaded efficiently with CachedNetworkImage 30), name, a brief description, and its distance from the user's location. FProgress 2 will indicate data loading, and FAlert 2 will inform users of no results or errors.
+         * GetX EquipmentController for Data Fetching and Filtering: The EquipmentController manages fetching equipment categories and items from Supabase, as well as handling search and filtering logic.
+         * File Location: lib/features/equipment/controllers/equipment_controller.dart
+         * Logic:
+Dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:geolocator/geolocator.dart'; // For distance calculation
+import 'package:med_aid/core/services/supabase_service.dart';
+import 'package:med_aid/core/models/equipment_category.dart'; // Define these models
+import 'package:med_aid/core/models/equipment_item.dart';
+import 'package:med_aid/features/location/controllers/location_controller.dart'; // To get user's location
+
+class EquipmentController extends GetxController {
+ final SupabaseService _supabaseService = Get.find<SupabaseService>();
+ final LocationController _locationController = Get.find<LocationController>(); // Access user's location
+
+ var isLoading = false.obs; // Reactive loading state
+ var categories = <EquipmentCategory>.obs; // Reactive list of categories [60]
+ var equipmentItems = <EquipmentItem>.obs; // Reactive list of all fetched equipment items [60]
+ var filteredItems = <EquipmentItem>.obs; // Reactive list for displayed items after filtering/search
+ var selectedCategory = Rxn<EquipmentCategory>(); // Reactive nullable for selected category
+ final searchController = TextEditingController(); // Controller for the search input
+ var errorMessage = ''.obs; // Reactive string for error messages
+
+ @override
+ void onInit() {
+   super.onInit();
+   fetchCategories(); // Fetch categories on controller initialization
+   fetchEquipmentItems(); // Fetch equipment items on controller initialization
+   // Listen for changes in the search text field to filter equipment
+   searchController.addListener(_filterEquipment);
+ }
+
+ @override
+ void onClose() {
+   searchController.dispose(); // Dispose the text editing controller
+   super.onClose();
+ }
+
+ // Fetches equipment categories from Supabase
+ Future<void> fetchCategories() async {
+   try {
+     final List<dynamic> data = await _supabaseService.fetchCategories();
+     categories.value = data.map((json) => EquipmentCategory.fromJson(json)).toList();
+   } catch (e) {
+     errorMessage.value = 'Failed to load categories: $e';
+   }
+ }
+
+ // Fetches all available equipment items from Supabase
+ Future<void> fetchEquipmentItems() async {
+   isLoading.value = true;
+   errorMessage.value = '';
+   try {
+     final List<dynamic> data = await _supabaseService.fetchEquipmentItems();
+     equipmentItems.value = data.map((json) => EquipmentItem.fromJson(json)).toList();
+     _filterEquipment(); // Apply initial filtering/search after fetching
+   } catch (e) {
+     errorMessage.value = 'Failed to load equipment: $e';
+   } finally {
+     isLoading.value = false;
+   }
+ }
+
+ // Sets the selected category and triggers filtering
+ void selectCategory(EquipmentCategory? category) {
+   selectedCategory.value = category;
+   _filterEquipment();
+ }
+
+ // Filters equipment items based on selected category and search query
+ void _filterEquipment() {
+   List<EquipmentItem> tempItems = equipmentItems;
+
+   // Filter by selected category
+   if (selectedCategory.value!= null) {
+     tempItems = tempItems.where((item) => item.categoryId == selectedCategory.value!.id).toList();
+   }
+
+   // Filter by search query (case-insensitive)
+   if (searchController.text.isNotEmpty) {
+     final query = searchController.text.toLowerCase();
+     tempItems = tempItems.where((item) =>
+         item.name.toLowerCase().contains(query) ||
+         item.description.toLowerCase().contains(query)).toList();
+   }
+
+   filteredItems.value = tempItems; // Update the reactive list that the UI observes
+ }
+
+ // Calculates the distance between the user's current location and an equipment item
+ double calculateDistance(double itemLat, double itemLon) {
+   final userLat = _locationController.latitude.value;
+   final userLon = _locationController.longitude.value;
+
+   if (userLat == null |
+
+| userLon == null) {
+return -1; // Indicate unknown distance if user location is not available
+}
+
+
+
+
+
+
+        // Use Geolocator to calculate distance in meters
+       return Geolocator.distanceBetween(userLat, userLon, itemLat, itemLon); [26]
+     }
+   }
+
+   // --- Data Models (lib/core/models/) ---
+   // Example: equipment_category.dart
+   class EquipmentCategory {
+     final String id;
+     final String name;
+     final String? description;
+     final String? iconUrl;
+
+     EquipmentCategory({required this.id, required this.name, this.description, this.iconUrl});
+
+     factory EquipmentCategory.fromJson(Map<String, dynamic> json) {
+       return EquipmentCategory(
+         id: json['id'],
+         name: json['name'],
+         description: json['description'],
+         iconUrl: json['icon_url'],
+       );
+     }
+   }
+
+   // Example: equipment_item.dart
+   class EquipmentItem {
+     final String id;
+     final String name;
+     final String description;
+     final String categoryId;
+     final String postedBy;
+     final String status;
+     final String? condition;
+     final String? imageUrl;
+     final double locationLat;
+     final double locationLon;
+     final String pickupAddress;
+     final String? contactInfo;
+
+     EquipmentItem({
+       required this.id,
+       required this.name,
+       required this.description,
+       required this.categoryId,
+       required this.postedBy,
+       required this.status,
+       this.condition,
+       this.imageUrl,
+       required this.locationLat,
+       required this.locationLon,
+       required this.pickupAddress,
+       this.contactInfo,
+     });
+
+     factory EquipmentItem.fromJson(Map<String, dynamic> json) {
+       return EquipmentItem(
+         id: json['id'],
+         name: json['name'],
+         description: json['description'],
+         categoryId: json['category_id'],
+         postedBy: json['posted_by'],
+         status: json['status'],
+         condition: json['condition'],
+         imageUrl: json['image_url'],
+         locationLat: (json['location_lat'] as num).toDouble(),
+         locationLon: (json['location_lon'] as num).toDouble(),
+         pickupAddress: json['pickup_address'],
+         contactInfo: json['contact_info'],
+       );
+     }
+   }
+   ```
+*   **Supabase Integration for `equipment_categories` and `equipment_items`**:
+   The `SupabaseService` (from Section 6.2) will be extended with methods to fetch data from the `equipment_categories` and `equipment_items` tables. These methods will handle the Supabase client queries, including selecting specific columns, ordering results, and applying filters (e.g., `status = 'available'`).
+
+   ```dart
+   // In SupabaseService (lib/core/services/supabase_service.dart)
+   //... (existing methods)...
+
+   // Fetches all equipment categories
+   Future<List<dynamic>> fetchCategories() async {
+     final response = await _supabaseClient
+        .from('equipment_categories')
+        .select('*')
+        .order('name', ascending: true) // Order categories alphabetically
+        .execute();
+     if (response.error!= null) throw response.error!;
+     return response.data as List<dynamic>;
+   }
+
+   // Fetches available equipment items, optionally joining with categories for display
+   Future<List<dynamic>> fetchEquipmentItems() async {
+     final response = await _supabaseClient
+        .from('equipment_items')
+        .select('*, equipment_categories(name)') // Select all item fields and category name
+        .eq('status', 'available') // Only retrieve items marked as 'available'
+        .execute();
+     if (response.error!= null) throw response.error!;
+     return response.data as List<dynamic>;
+   }
+   ```
+*   **Displaying Categorized Equipment List**:
+   The UI of the `EquipmentBrowserScreen` will leverage GetX's reactive capabilities. `Obx` widgets will wrap UI components that depend on `isLoading`, `filteredItems`, or `errorMessage`.[6, 7] This ensures that only the necessary parts of the UI rebuild when the state changes, contributing to a smooth and performant user experience.[7, 8] The category filter will be rendered using `FSelect` with data from the `categories.value` list, and the `filteredItems.value` will populate a scrollable list or grid of equipment cards.
+
+The consistent application of GetX's reactive UI patterns across all screens, particularly for dynamic data, significantly enhances the user experience. By utilizing Rx variables (e.g., isLoading.obs, equipmentItems.obs) and wrapping dependent UI components with Obx widgets, GetX ensures that only the minimal necessary parts of the user interface rebuild when the underlying state changes.6 This approach is crucial for performance in data-driven applications like MED AID, especially for lists that might frequently update or for responsive loading indicators. This reactive paradigm simplifies UI updates and eliminates the need for manual setState() calls, leading to cleaner and more predictable code.
+A robust application must gracefully handle permissions and network states. All screens interact with Supabase (network requests) and the Location Selection screen specifically relies on geolocator for permissions and location data.26 Network operations and device permissions are inherently asynchronous and prone to failure (e.g., no internet, denied permissions, server errors). Implementing try-catch blocks for all API calls and permission requests is vital for application stability.56 Using isLoading.value = true/false with Obx provides immediate visual feedback to the user, such as spinners or skeleton loaders, preventing the perception of a frozen application. Displaying errorMessage.value in FAlert or FToast components informs the user clearly about what went wrong, rather than crashing or showing a blank screen.56 This approach makes the application resilient and significantly improves the user's interaction by providing clear feedback and preventing unexpected behavior.
+7. Best Practices & Advanced Considerations
+Building a polished and functional demo like MED AID requires adherence to best practices that extend beyond basic implementation. These considerations enhance the application's robustness, maintainability, security, and overall user experience.
+Handling Loading and Error States Gracefully
+A truly graceful approach to managing loading and error states involves a multi-layered strategy, ensuring continuous feedback and recovery mechanisms for the user.
+            1. Local UI Feedback: Implement immediate visual cues at the point of interaction. Use isLoading.obs or GetX's RxStatus in controllers to manage loading states.56 Display FProgress indicators (FProgress.circular or FProgress.linear from forui) or skeleton loaders while data is being fetched or operations are in progress.2
+            2. Controller-Level Handling: Utilize try-catch blocks within GetX controllers to manage specific API exceptions (e.g., AuthException, PostgrestException from Supabase) and generic Exception types.56 Update a reactive errorMessage.obs variable and display it to the user using FAlert or FToast components from forui.2 Messages should be user-friendly and avoid technical jargon.56
+            3. Retry Mechanism: For network-related errors, provide users with an option to retry the failed operation. This can be implemented as a "Retry" button that re-triggers the original data fetching or action.56
+            4. Global Error Handling and Redirection: For cross-cutting concerns like expired authentication tokens (e.g., HTTP 401 Unauthorized errors), consider implementing a global error handler or using HTTP client interceptors (if a package like Dio were used). Such mechanisms can automatically attempt to refresh tokens or, if unsuccessful, trigger a global sign-out and redirect the user to the login screen.61 This integrates seamlessly with go_router's refreshListenable and the authentication redirection logic, ensuring that the application's navigation state is always consistent with the user's authentication status, even in the face of unexpected errors.48
+Environment Variable Management (flutter_dotenv)
+For secure and flexible configuration, environment variables are indispensable. As previously discussed in Section 2, flutter_dotenv is used to load sensitive information like Supabase URL and Anon Key from a .env file.21 It is paramount to add .env to your .gitignore file to prevent these sensitive credentials from being committed to version control systems.21 Additionally, ensure that the .env file is properly listed in the assets section of your pubspec.yaml so that it is bundled with the application.21 This practice separates configuration from code, simplifies management across different environments, and enhances security.
+Image Handling and Caching (cached_network_image)
+Applications that display network images, such as equipment photos or user avatars, can significantly benefit from image caching. The cached_network_image package is highly recommended for this purpose.30 By using this package, images are loaded once and then stored locally, reducing subsequent network requests, saving bandwidth, and improving application responsiveness.12 Developers should leverage the placeholder and errorWidget properties of CachedNetworkImage to provide a smoother user experience during loading and to gracefully handle cases where an image fails to load.30
+Security Considerations
+Security is paramount for any application, especially one dealing with user data and community resources.
+            * Row Level Security (RLS): This is the primary defense mechanism within Supabase's PostgreSQL database. Ensure that RLS is enabled for all relevant tables (profiles, equipment_categories, equipment_items) and that appropriate policies are meticulously defined.4 RLS enforces data access rules directly at the database level, preventing unauthorized data exposure or modification regardless of client-side logic.
+            * Client-Side Secrets: Reiterate the critical principle that sensitive API keys or any administrative credentials should never be hardcoded or stored client-side.21 Only the public anonKey for Supabase should be included in the client application.
+            * Authentication Flow: Rely on Supabase's robust authentication services for secure handling of user credentials. Supabase manages password hashing, session management, and token handling securely.50 Utilize OTPs for phone authentication where appropriate to enhance security.
+Leveraging Flutter 3.32.0 Specific Optimizations
+Flutter 3.32.0 introduces several optimizations that developers should be aware of to maximize the application's performance.
+            * Impeller Rendering Engine: Enabled by default for iOS and Android, Impeller provides significant performance benefits, particularly for animations and UI rendering.1 While it generally works without explicit code changes, developers should monitor the application's performance, especially for complex animations, and investigate any unexpected regressions.
+            * Updated Theme System: The enhanced controls over Material ThemeData in Flutter 3.32.0 should be leveraged to ensure complete consistency between forui's theming and any standard Material components used.1 The FThemeData.toThemeData() method is crucial for this integration.18
+            * Dart 3.8 Formatting: Adhere to the updated Dart formatter for cleaner, more consistent code.11 Regularly running dart format. across the codebase ensures adherence to these standards, improving readability and collaboration.
+A holistic error management strategy is crucial for a robust and user-friendly application. This approach extends beyond merely displaying error messages to encompass a multi-layered defense system. It begins with immediate visual cues and contextual error messages at the UI level, progresses to structured try-catch blocks within GetX controllers for managing specific API exceptions, and can include service-level interception for cross-cutting concerns like token expiration. This comprehensive strategy, culminating in go_router's global redirection based on authentication state changes, ensures that the application remains resilient and provides clear, actionable feedback to the user, even in the event of unforeseen issues. This systemic approach to error handling elevates the application's reliability and user confidence.
+Furthermore, performance should be viewed as a continuous concern throughout the development lifecycle, not just a one-time optimization. While Flutter 3.32.0 provides inherent performance improvements through the Impeller engine, achieving a truly "polished" application necessitates ongoing attention to efficiency. This includes leveraging libraries like cached_network_image to mitigate common performance bottlenecks in image-rich content 30, utilizing GetX's reactive state management to minimize unnecessary widget rebuilds 7, and adhering to general coding best practices such as optimizing animations and implementing lazy loading for large assets.12 By integrating these performance considerations at every stage, the MED AID application can consistently deliver a smooth, responsive, and high-quality user experience.
+8. Conclusion
+The development of the MED AID demo application, built upon Flutter 3.32.0, forui, Supabase, GetX, and go_router, establishes a robust and scalable foundation for a critical community service. The meticulous adherence to a structured project architecture, coupled with the strategic selection of modern, performant technologies, directly contributes to a polished and functional user experience.
+Flutter 3.32.0, with its Impeller rendering engine and updated theme system, provides a high-performance and visually consistent canvas. This is synergistically enhanced by forui, which delivers a minimalistic yet rich UI, ensuring the application's aesthetic appeal and responsiveness. The use of forui's CLI tools further streamlines the theming process, accelerating initial UI development.
+Supabase serves as a powerful and flexible backend, abstracting complex database and authentication infrastructure. Its PostgreSQL core, combined with built-in authentication providers (Email, Phone, Google OAuth) and robust Row Level Security (RLS), ensures secure data management and user access control from day one. The implementation of database triggers for automatic user profile creation exemplifies how backend automation can maintain data consistency and simplify client-side logic.
+GetX streamlines state management and dependency injection, promoting reactive UI updates and minimizing boilerplate code. This efficiency is critical for managing dynamic data, such as user location and equipment listings. Coupled with go_router, which provides declarative and authentication-aware navigation, the application achieves a seamless and predictable user flow, with automatic redirection based on authentication status.
+Best practices, such as comprehensive error handling strategies, secure environment variable management, and efficient image caching, are integrated throughout the guide. These practices are not merely add-ons but fundamental components that contribute to the application's stability, security, and long-term maintainability.
+In conclusion, this guide provides a comprehensive blueprint for building the MED AID demo. The chosen technical stack and architectural patterns are well-suited for developing a high-quality, scalable, and maintainable application. By following these detailed steps, developers can create a functional and polished demo that effectively showcases the vision of connecting users with free medical equipment, laying a strong groundwork for future expansion and real-world impact.
+Works cited
+            1. Flutter Latest Version 3.32.0 Explained - Technaureus, accessed on June 8, 2025, https://www.technaureus.com/blog-detail/flutter-latest-version-explained
+            2. forui - Dart API docs - Pub.dev, accessed on June 8, 2025, https://pub.dev/documentation/forui/latest/
+            3. forus-labs/forui: Forus Lab's Flutter UI library - GitHub, accessed on June 8, 2025, https://github.com/forus-labs/forui
+            4. Open source SQL Database - Supabase, accessed on June 8, 2025, https://supabase.com/database
+            5. Getting Started with Supabase - DEV Community, accessed on June 8, 2025, https://dev.to/nhannguyendevjs/getting-started-with-supabase-d1p
+            6. Simplifying Flutter State Management with GetX Tutorial - Mindbowser, accessed on June 8, 2025, https://www.mindbowser.com/flutter-state-management-getx-guide/
+            7. The ultimate guide to GetX state management in Flutter - LogRocket Blog, accessed on June 8, 2025, https://blog.logrocket.com/ultimate-guide-getx-state-management-flutter/
+            8. Flutter – GetX State Management Library | GeeksforGeeks, accessed on June 8, 2025, https://www.geeksforgeeks.org/flutter-getx-state-management-library/
+            9. Guarding routes in Flutter with GoRouter and Riverpod - DEV Community, accessed on June 8, 2025, https://dev.to/dinko7/guarding-routes-in-flutter-with-gorouter-and-riverpod-40h4
+            10. go_router | Flutter package - Pub.dev, accessed on June 8, 2025, https://pub.dev/packages/go_router
+            11. Flutter 3.32 Support and Review - Shorebird, accessed on June 8, 2025, https://shorebird.dev/blog/flutter-332-release
+            12. Flutter App Best Practices To Follow in 2025 | Blog Miquido, accessed on June 8, 2025, https://www.miquido.com/blog/flutter-app-best-practices/
+            13. Guide to app architecture - Flutter Documentation, accessed on June 8, 2025, https://docs.flutter.dev/app-architecture/guide
+            14. Best Practices for Managing Route Names and Paths with go_router in Flutter, accessed on June 8, 2025, https://dev.to/7twilight/best-practices-for-managing-route-names-and-paths-with-gorouter-in-flutter-4pd8
+            15. Flutter GetX: Best Practices for Code Organization - Till it's done, accessed on June 8, 2025, https://tillitsdone.com/blogs/flutter-getx-code-organization/
+            16. Using packages - Flutter Documentation, accessed on June 8, 2025, https://docs.flutter.dev/packages-and-plugins/using-packages
+            17. Zinc - 4 Color Linear UI Gradient Generator, accessed on June 8, 2025, https://gradient.page/ui-gradients/zinc
+            18. Themes – Forui, accessed on June 8, 2025, https://forui.dev/docs/themes
+            19. Use Supabase with Flutter, accessed on June 8, 2025, https://supabase.com/docs/guides/getting-started/quickstarts/flutter
+            20. Flutter Supabase Authentication - Complete tutorial - Sandro Maglione, accessed on June 8, 2025, https://www.sandromaglione.com/articles/flutter-supabase-authentication-complete-tutorial
+            21. flutter_dotenv | Flutter package - Pub.dev, accessed on June 8, 2025, https://pub.dev/packages/flutter_dotenv
+            22. flutter_dotenv 5.2.0 | Flutter package - Pub.dev, accessed on June 8, 2025, https://pub.dev/packages/flutter_dotenv/versions/5.2.0
+            23. Flutter – Passing Multiple Data with GetX - GeeksforGeeks, accessed on June 8, 2025, https://www.geeksforgeeks.org/flutter-passing-multiple-data-with-getx/
+            24. Flutter pubspec options, accessed on June 8, 2025, https://docs.flutter.dev/tools/pubspec
+            25. Crafting Magic with Flutter Supabase – Simplifying Cross-Platform Development - DhiWise, accessed on June 8, 2025, https://www.dhiwise.com/post/simplifying-cross-platform-development-with-flutter-supabase
+            26. geolocator | Flutter package - Pub.dev, accessed on June 8, 2025, https://pub.dev/packages/geolocator
+            27. How to Use Geolocator Plugin in Flutter - Cybrosys Technologies, accessed on June 8, 2025, https://www.cybrosys.com/blog/how-to-use-geolocator-plugin-in-flutter
+            28. image_picker | Flutter package - Pub.dev, accessed on June 8, 2025, https://pub.dev/packages/image_picker
+            29. cached_network_svg_image | Flutter package - Pub.dev, accessed on June 8, 2025, https://pub.dev/packages/cached_network_svg_image
+            30. cached_network_image library - Dart API - Pub.dev, accessed on June 8, 2025, https://pub.dev/documentation/cached_network_image/latest/cached_network_image
+            31. Users | Supabase Docs, accessed on June 8, 2025, https://supabase.com/docs/guides/auth/users
+            32. How to implement email verification in Supabase? - Bootstrapped, accessed on June 8, 2025, https://bootstrapped.app/guide/how-to-implement-email-verification-in-supabase
+            33. Setting up email and password authentication - Comprehensive Guide to Supabase Database Development | StudyRaid, accessed on June 8, 2025, https://app.studyraid.com/en/read/8395/231588/setting-up-email-and-password-authentication
+            34. Phone Auth with Textlocal | Supabase Docs - Vercel, accessed on June 8, 2025, https://docs-4ta3lngqn-supabase.vercel.app/docs/guides/auth/phone-login/textlocal
+            35. Phone Auth with Vonage - Supabase, accessed on June 8, 2025, https://zone-www-dot-9obe9a1tk-supabase.vercel.app/docs/guides/auth/auth-vonage
+            36. How to configure Supabase authentication with Google OAuth? - Bootstrapped, accessed on June 8, 2025, https://bootstrapped.app/guide/how-to-configure-supabase-authentication-with-google-oauth
+            37. Login with Google | Supabase Docs, accessed on June 8, 2025, https://supabase.com/docs/guides/auth/social-login/auth-google
+            38. Declarative database schemas | Supabase Docs, accessed on June 8, 2025, https://supabase.com/docs/guides/local-development/declarative-database-schemas
+            39. Declarative Schemas for Simpler Database Management - Supabase, accessed on June 8, 2025, https://supabase.com/blog/declarative-schemas
+            40. getting auth.users table data in supabase - Stack Overflow, accessed on June 8, 2025, https://stackoverflow.com/questions/77751173/getting-auth-users-table-data-in-supabase
+            41. Creating user profiles on sign-up in Supabase - Zeroqode Docs, accessed on June 8, 2025, https://docs.zeroqode.com/plugins/supabase-by-nocodegarden/quickstart/creating-user-profiles-on-sign-up-in-supabase
+            42. Tables and Data | Supabase Docs, accessed on June 8, 2025, https://supabase.com/docs/guides/database/tables
+            43. how do I set custom default uuid for my specific column? · supabase · Discussion #33481, accessed on June 8, 2025, https://github.com/orgs/supabase/discussions/33481
+            44. Foreign Key Selector | Supabase Features, accessed on June 8, 2025, https://supabase.com/features/foreign-key-selector
+            45. Web Developers: 7-Establishing Table Relationships in Supabase with Foreign Keys, accessed on June 8, 2025, https://www.youtube.com/watch?v=oX_xHLkNRns
+            46. supabase-graphql-example/data/db/schema.sql at main - GitHub, accessed on June 8, 2025, https://github.com/supabase-community/supabase-graphql-example/blob/main/data/db/schema.sql
+            47. Easy Routing in Flutter with go_router - Nsikak's blog, accessed on June 8, 2025, https://nsikak.hashnode.dev/easy-routing-in-flutter-with-gorouter
+            48. Reactive redirection using go_router and flutter_bloc with Auth and UnAuth Flow, accessed on June 8, 2025, https://stackoverflow.com/questions/76240799/reactive-redirection-using-go-router-and-flutter-bloc-with-auth-and-unauth-flow
+            49. Top-level redirection - go_router, accessed on June 8, 2025, https://docs.page/csells/go_router/redirection
+            50. Supabase Authentication Made EASY for Flutter App Developers | Riverpod x GoRouter, accessed on June 8, 2025, https://www.youtube.com/watch?v=Regyx9wME-k
+            51. Migrating 10k Lines of Code from Navigation 1.0/GetX to GoRouter 2.0: A Case Study - DEV Community, accessed on June 8, 2025, https://dev.to/arslanyousaf12/migrating-10k-lines-of-code-from-navigation-10getx-to-gorouter-20-a-case-study-5fi9
+            52. Flutter navigation with go_router package - themobilecoder, accessed on June 8, 2025, https://themobilecoder.com/flutter-navigation-with-go-router/
+            53. Flutter - Animated Splash Screen - GeeksforGeeks, accessed on June 8, 2025, https://www.geeksforgeeks.org/flutter-animated-splash-screen/
+            54. Crafting a Captivating Flutter Splash Screen for Best Visuals - DhiWise, accessed on June 8, 2025, https://www.dhiwise.com/post/crafting-a-captivating-splash-screen-in-flutter-igniting-visual-appeal
+            55. How to Navigate from Splash Screen to a StatefulShellRoute.indexedStack route of go_router Flutter - Stack Overflow, accessed on June 8, 2025, https://stackoverflow.com/questions/77986524/how-to-navigate-from-splash-screen-to-a-statefulshellroute-indexedstack-route-of
+            56. Handling API Errors and Loading States - Build Flutter Apps with Bloc State Management and Reactive Programming | StudyRaid, accessed on June 8, 2025, https://app.studyraid.com/en/read/11796/374350/handling-api-errors-and-loading-states
+            57. Flutter: Sign in a user | Supabase Docs, accessed on June 8, 2025, https://supabase.com/docs/reference/dart/auth-signinwithpassword
+            58. Implementing Auth in Flutter using Supabase and Getx - DEV Community, accessed on June 8, 2025, https://dev.to/adityasubrahmanyabhat/implementing-auth-in-flutter-using-supabase-and-getx-1m14
+            59. Flutter Auth UI | Supabase Docs, accessed on June 8, 2025, https://supabase.com/docs/guides/auth/auth-helpers/flutter-auth-ui
+            60. dart - Flutter and Getx State Management - List View Changes - Stack Overflow, accessed on June 8, 2025, https://stackoverflow.com/questions/68611062/flutter-and-getx-state-management-list-view-changes
+            61. Best practices for error-handling : r/FlutterDev - Reddit, accessed on June 8, 2025, https://www.reddit.com/r/FlutterDev/comments/1h2mmt0/best_practices_for_errorhandling/
