@@ -89,26 +89,27 @@ class AppRouter {
       ],
       // Global redirect logic for authentication
       redirect: (context, state) {
-        // Skip auth checks for auth-test screen and authentication-related screens
-        if (state.matchedLocation == '/auth-test' || 
-            state.matchedLocation == '/mobile-number' ||
-            state.matchedLocation == '/splash') {
+        // Skip auth checks for auth-test screen
+        if (state.matchedLocation == '/auth-test') {
           return null;
         }
         
         final session = Supabase.instance.client.auth.currentSession;
         final bool loggedIn = session != null;
         final bool loggingIn = state.matchedLocation == '/auth';
+        final bool isSplash = state.matchedLocation == '/splash';
 
         // If not logged in and trying to access protected route
-        if (!loggedIn && !loggingIn) {
+        if (!loggedIn && !loggingIn && !isSplash) {
           return '/auth'; 
         }
         
-        // If logged in and trying to access auth screen
+        // If logged in and trying to access auth screen (but not splash)
         if (loggedIn && loggingIn) {
           return '/home';
         }
+        
+        // Let splash screen handle its own navigation based on auth state
         
         // No redirection needed
         return null;
