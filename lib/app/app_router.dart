@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
+import 'package:med_aid/features/auth/presentation/views/login_mobile_number_screen.dart';
+import 'package:med_aid/features/auth/presentation/views/starting_options_screen.dart';
 import 'package:med_aid/features/splash/presentation/views/splash_screen.dart';
 import 'package:med_aid/features/home/presentation/views/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,7 +22,8 @@ enum AppRoute {
   locationSelection,
   home,
   equipmentDetail,
-  ngoList
+  ngoList,
+  mobileNumber
 }
 
 class AppRouter {
@@ -56,7 +59,12 @@ class AppRouter {
         GoRoute(
           path: '/auth-test',
           name: AppRoute.authTest.name,
-          builder: (context, state) => const AuthTestScreen(),
+          builder: (context, state) => const StartingOptionsScreen(),
+        ),
+        GoRoute(
+          path: '/mobile-number',
+          name: AppRoute.mobileNumber.name,
+          builder: (context, state) => const LoginMobileNumberScreen(),
         ),
         GoRoute(
           path: '/location-selection',
@@ -81,27 +89,26 @@ class AppRouter {
       ],
       // Global redirect logic for authentication
       redirect: (context, state) {
-        // Skip auth checks for auth-test screen
-        if (state.matchedLocation == '/auth-test') {
+        // Skip auth checks for auth-test screen and authentication-related screens
+        if (state.matchedLocation == '/auth-test' || 
+            state.matchedLocation == '/mobile-number' ||
+            state.matchedLocation == '/splash') {
           return null;
         }
         
         final session = Supabase.instance.client.auth.currentSession;
         final bool loggedIn = session != null;
         final bool loggingIn = state.matchedLocation == '/auth';
-        final bool isSplash = state.matchedLocation == '/splash';
 
         // If not logged in and trying to access protected route
-        if (!loggedIn && !loggingIn && !isSplash) {
+        if (!loggedIn && !loggingIn) {
           return '/auth'; 
         }
         
-        // If logged in and trying to access auth screen (but not splash)
+        // If logged in and trying to access auth screen
         if (loggedIn && loggingIn) {
           return '/home';
         }
-        
-        // Let splash screen handle its own navigation based on auth state
         
         // No redirection needed
         return null;
