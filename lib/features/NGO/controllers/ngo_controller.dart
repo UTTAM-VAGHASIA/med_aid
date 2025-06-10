@@ -31,11 +31,12 @@ class NGOController extends GetxController {
 
   // Load NGO items
   void loadNGOItems() {
+    print("Loading NGO items...");
     ngoItems.assignAll([
       NGOItem(
         id: '1',
         name: 'I M HUMAN CHARITABLE TRUST',
-        logoPath: 'assets/ngo/imct_logo.png', // Placeholder, create these assets
+        logoPath: 'assets/ngo/imct_logo.png',
         location: 'Bardoli',
         openingHours: 'Open 24 Hrs',
         organizationType: 'Charity Organization',
@@ -45,26 +46,61 @@ class NGOController extends GetxController {
       NGOItem(
         id: '2',
         name: 'Beyond Humanity Foundation (NGO)',
-        logoPath: 'assets/ngo/bhf_logo.png', // Placeholder, create these assets
+        logoPath: 'assets/ngo/bhf_logo.png',
         location: 'Bardoli',
         openingHours: 'Open 24 Hrs',
         organizationType: 'Non-governmental organization in Gujarat',
         phoneNumber: '+91 70169 60550',
         address: 'Ngo, 119, Sai Villa Complex, Near Saibaba Temple Astan, Bardoli-394601',
       ),
+      NGOItem(
+        id: '3',
+        name: 'Diwaliben Ukabhai Patel Sarvajanik Trust',
+        logoPath: 'assets/ngo/dupst_logo.png', // Placeholder logo
+        location: 'Bardoli',
+        openingHours: 'Open 24 Hrs',
+        organizationType: 'Public Charitable Trust',
+        phoneNumber: 'TBD',
+        address: 'TBD',
+      ),
+      NGOItem(
+        id: '4',
+        name: 'Universal Welfare Trust',
+        logoPath: 'assets/ngo/uwt_logo.png', // Placeholder logo
+        location: 'Bardoli',
+        openingHours: 'Open 24 Hrs',
+        organizationType: 'Welfare Organization',
+        phoneNumber: 'TBD',
+        address: 'TBD',
+      ),
+      NGOItem(
+        id: '5',
+        name: 'Vatsalya Trust',
+        logoPath: 'assets/ngo/vatsalya_logo.png', // Placeholder logo
+        location: 'Bardoli',
+        openingHours: 'Open 24 Hrs',
+        organizationType: 'Charitable Trust',
+        phoneNumber: 'TBD',
+        address: 'TBD',
+      ),
     ]);
+    print("Loaded ${ngoItems.length} NGO items");
   }
 
   // Get filtered NGO items based on search query
   List<NGOItem> get filteredNGOItems {
     if (searchQuery.value.isEmpty) {
+      print("Returning all ${ngoItems.length} NGO items");
       return ngoItems;
     }
     
-    return ngoItems.where((item) => 
+    final filtered = ngoItems.where((item) => 
       item.name.toLowerCase().contains(searchQuery.value.toLowerCase()) ||
       item.location.toLowerCase().contains(searchQuery.value.toLowerCase()) ||
       item.organizationType.toLowerCase().contains(searchQuery.value.toLowerCase())
     ).toList();
+    
+    print("Filtered to ${filtered.length} NGO items");
+    return filtered;
   }
 } 
