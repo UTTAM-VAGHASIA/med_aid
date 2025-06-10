@@ -64,7 +64,7 @@ class EquipmentController extends GetxController {
       ),
       EquipmentItem(
         id: '7',
-        name: 'Coller',
+        name: 'Collar',
         imagePath: 'assets/items/coller.png',
       ),
       EquipmentItem(

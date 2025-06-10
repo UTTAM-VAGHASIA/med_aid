@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:med_aid/features/equipment/controllers/equipment_controller.dart';
 import 'package:med_aid/app/app_router.dart';
+import 'package:med_aid/core/widgets/settings_dialog.dart';
+import 'package:med_aid/features/equipment/data/models/equipment_item.dart';
 
 class EquipmentListScreen extends StatelessWidget {
   const EquipmentListScreen({super.key});
@@ -50,16 +52,24 @@ class EquipmentListScreen extends StatelessWidget {
                 ),
                 
                 // Settings icon at right
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.settings,
-                    color: Color(0xFF3E8B8C),
-                    size: 24,
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) => const SettingsDialog(),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.settings,
+                      color: Color(0xFF3E8B8C),
+                      size: 24,
+                    ),
                   ),
                 ),
               ],
@@ -119,23 +129,38 @@ class EquipmentListScreen extends StatelessWidget {
             ),
           ),
           
-          // Equipment grid
+          // Equipment grid - updated to match the image
           Expanded(
             child: Obx(() {
               final items = controller.filteredEquipmentItems;
-              return GridView.builder(
+              
+              if (items.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No equipment found',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                );
+              }
+              
+              return Padding(
                 padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 0.9,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final EquipmentItem item = items[index];
+                    return _buildEquipmentCard(item);
+                  },
                 ),
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return _buildEquipmentCard(item);
-                },
               );
             }),
           ),
@@ -144,60 +169,59 @@ class EquipmentListScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildEquipmentCard(dynamic item) {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to NGO list when item is tapped
-        final appRouter = Get.find<AppRouter>();
-        appRouter.goWithTransition('/ngo');
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade200,
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Equipment image
-            Expanded(
-              child: Image.asset(
-                item.imagePath,
-                fit: BoxFit.contain,
-                height: 60,
-              ),
-            ),
-            
-            // Equipment name
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(
-                color: Color(0xFFAFDCDD),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
+  Widget _buildEquipmentCard(EquipmentItem item) {
+    return Hero(
+      tag: 'equipment_${item.id}',
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: () {
+            // Navigate to NGO list when item is tapped
+            final appRouter = Get.find<AppRouter>();
+            appRouter.goWithTransition('/ngo');
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade200,
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              child: Text(
-                item.name,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF3E8B8C),
-                ),
-              ),
+              ],
             ),
-          ],
+            child: Column(
+              children: [
+                // Equipment name at the top
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF54B2B3),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                
+                // Equipment image
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.asset(
+                      item.imagePath,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:med_aid/app/app_router.dart';
+import 'package:med_aid/core/widgets/settings_dialog.dart';
 
 class CitySelectionScreen extends StatefulWidget {
   const CitySelectionScreen({super.key});
@@ -90,10 +91,18 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                 ),
                 
                 // Settings icon
-                const Icon(
-                  Icons.settings,
-                  color: Color(0xFF289193),
-                  size: 28,
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) => const SettingsDialog(),
+                    );
+                  },
+                  child: const Icon(
+                    Icons.settings,
+                    color: Color(0xFF289193),
+                    size: 28,
+                  ),
                 ),
               ],
             ),

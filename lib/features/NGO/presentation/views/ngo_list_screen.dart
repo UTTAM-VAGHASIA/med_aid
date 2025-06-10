@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:med_aid/features/NGO/controllers/ngo_controller.dart';
+import 'package:med_aid/app/app_router.dart';
+import 'package:med_aid/core/widgets/settings_dialog.dart';
 
 class NGOListScreen extends StatelessWidget {
   const NGOListScreen({super.key});
@@ -49,16 +51,24 @@ class NGOListScreen extends StatelessWidget {
                 ),
                 
                 // Settings icon at right
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.settings,
-                    color: Color(0xFF3E8B8C),
-                    size: 24,
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) => const SettingsDialog(),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.settings,
+                      color: Color(0xFF3E8B8C),
+                      size: 24,
+                    ),
                   ),
                 ),
               ],

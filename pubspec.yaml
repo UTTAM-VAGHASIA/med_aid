@@ -50,6 +50,7 @@ dependencies:
   app_links: ^6.4.0
   google_sign_in: ^6.3.0
   firebase_core: ^3.13.1
+  flutter_staggered_grid_view: ^0.7.0
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +78,9 @@ flutter:
   assets:
     - .env
     - assets/
+    - assets/items/
+    - assets/items/walking_stick/
+    - assets/ngo/
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
