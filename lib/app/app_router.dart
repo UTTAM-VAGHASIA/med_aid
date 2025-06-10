@@ -4,11 +4,9 @@ import 'package:get/get.dart';
 import 'package:med_aid/features/auth/presentation/views/login_mobile_number_screen.dart';
 import 'package:med_aid/features/auth/presentation/views/starting_options_screen.dart';
 import 'package:med_aid/features/splash/presentation/views/splash_screen.dart';
-import 'package:med_aid/features/home/presentation/views/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:med_aid/core/controllers/transition_controller.dart';
-// import 'package:med_aid/features/auth/presentation/views/auth_screen.dart';
 
 // Global navigator key for GoRouter
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -73,7 +71,7 @@ class AppRouter {
         GoRoute(
           path: '/home',
           name: AppRoute.home.name,
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) => const SizedBox(),
         ),
         GoRoute(
           path: '/equipment/:id',
@@ -96,12 +94,12 @@ class AppRouter {
         
         final session = Supabase.instance.client.auth.currentSession;
         final bool loggedIn = session != null;
-        final bool loggingIn = state.matchedLocation == '/auth';
+        final bool loggingIn = state.matchedLocation == '/auth-test';
         final bool isSplash = state.matchedLocation == '/splash';
 
         // If not logged in and trying to access protected route
         if (!loggedIn && !loggingIn && !isSplash) {
-          return '/auth'; 
+          return '/auth-test'; 
         }
         
         // If logged in and trying to access auth screen (but not splash)

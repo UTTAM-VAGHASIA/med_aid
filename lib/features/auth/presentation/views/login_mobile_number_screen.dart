@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:med_aid/app/app_router.dart';
 import 'package:med_aid/features/auth/bindings/auth_binding.dart';
 import 'package:med_aid/features/auth/controllers/auth_controller.dart';
 
@@ -14,6 +15,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   late final AuthController _authController;
+  final AppRouter appRouter = Get.find<AppRouter>();
   
   @override
   void initState() {
@@ -63,8 +65,8 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 30,),
+                      onPressed: () => appRouter.goWithTransition('/auth-test'),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),

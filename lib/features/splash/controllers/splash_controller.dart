@@ -67,7 +67,7 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
     final isLoggedIn = currentUser != null;
     
     // Set target route based on auth state
-    final nextRoute = isLoggedIn ? '/home' : '/auth-test';
+    final nextRoute = isLoggedIn ? '/auth-test' : '/home';
     
     // Navigate using the transition controller
     isNavigating.value = true;

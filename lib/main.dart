@@ -38,9 +38,9 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'MED AID',
-      theme: FThemes.zinc.light.toApproximateMaterialTheme(), // Use Zinc theme from forui
-      darkTheme: FThemes.zinc.dark.toApproximateMaterialTheme(),
-      themeMode: ThemeMode.system,
+      theme: medAidLightTheme.toApproximateMaterialTheme(), // Use Zinc theme from forui
+      darkTheme: medAidDarkTheme.toApproximateMaterialTheme(),
+      themeMode: ThemeMode.light,
       routeInformationProvider: appRouter.router.routeInformationProvider,
       routeInformationParser: appRouter.router.routeInformationParser,
       routerDelegate: appRouter.router.routerDelegate,
