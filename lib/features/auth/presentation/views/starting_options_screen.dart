@@ -8,7 +8,6 @@ class StartingOptionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    // Access the router instance
     final appRouter = Get.find<AppRouter>();
     
     return Scaffold(
@@ -59,23 +58,6 @@ class StartingOptionsScreen extends StatelessWidget {
                     ),
                     
                     const SizedBox(height: 32),
-                    
-                    // App name and tagline
-                    const Text(
-                      'MED - AID',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '" Bridging The Gap,\nTransforming Healthcare "',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -112,7 +94,6 @@ class StartingOptionsScreen extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       // Navigate to sign up screen (also using auth screen)
-                      appRouter.goWithTransition('/auth-test');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800],

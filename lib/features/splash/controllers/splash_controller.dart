@@ -63,11 +63,8 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
   
   // Check if user is authenticated and set navigation target
   void _determineNavigationTarget() {
-    final currentUser = _supabaseService.getCurrentUser();
-    final isLoggedIn = currentUser != null;
-    
-    // Set target route based on auth state
-    final nextRoute = isLoggedIn ? '/auth-test' : '/home';
+    // Navigate to starting options screen first
+    const nextRoute = '/auth-test';
     
     // Navigate using the transition controller
     isNavigating.value = true;

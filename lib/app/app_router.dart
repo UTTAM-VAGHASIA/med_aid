@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
 import 'package:med_aid/features/auth/presentation/views/login_mobile_number_screen.dart';
+import 'package:med_aid/features/auth/presentation/views/otp_verification_screen.dart';
 import 'package:med_aid/features/auth/presentation/views/starting_options_screen.dart';
 import 'package:med_aid/features/splash/presentation/views/splash_screen.dart';
+import 'package:med_aid/features/home/presentation/views/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:med_aid/core/controllers/transition_controller.dart';
+import 'package:med_aid/features/location/presentation/views/city_selection_screen.dart';
+import 'package:med_aid/features/equipment/presentation/views/equipment_list_screen.dart';
+import 'package:med_aid/features/equipment/bindings/equipment_bindings.dart';
+import 'package:med_aid/features/NGO/presentation/views/ngo_list_screen.dart';
+import 'package:med_aid/features/NGO/bindings/ngo_bindings.dart';
 
 // Global navigator key for GoRouter
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -19,8 +26,11 @@ enum AppRoute {
   locationSelection,
   home,
   equipmentDetail,
+  equipmentList,
   ngoList,
-  mobileNumber
+  mobileNumber,
+  otpVerification,
+  citySelection,
 }
 
 class AppRouter {
@@ -64,6 +74,16 @@ class AppRouter {
           builder: (context, state) => const LoginMobileNumberScreen(),
         ),
         GoRoute(
+          path: '/otp-verification',
+          name: AppRoute.otpVerification.name,
+          builder: (context, state) => const OtpVerificationScreen(),
+        ),
+        GoRoute(
+          path: '/city-selection',
+          name: AppRoute.citySelection.name,
+          builder: (context, state) => const CitySelectionScreen(),
+        ),
+        GoRoute(
           path: '/location-selection',
           name: AppRoute.locationSelection.name,
           builder: (context, state) => const SizedBox(), // Placeholder, will be replaced
@@ -71,7 +91,16 @@ class AppRouter {
         GoRoute(
           path: '/home',
           name: AppRoute.home.name,
-          builder: (context, state) => const SizedBox(),
+          builder: (context, state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: '/equipment',
+          name: AppRoute.equipmentList.name,
+          builder: (context, state) {
+            // Inject the controller
+            EquipmentBindings().dependencies();
+            return const EquipmentListScreen();
+          },
         ),
         GoRoute(
           path: '/equipment/:id',
@@ -79,19 +108,32 @@ class AppRouter {
           builder: (context, state) => const SizedBox(), // Placeholder, will be replaced
         ),
         GoRoute(
-          path: '/ngo-list/:category/:location',
+          path: '/ngo',
           name: AppRoute.ngoList.name,
-          builder: (context, state) => const SizedBox(), // Placeholder, will be replaced
+          builder: (context, state) {
+            // Inject the controller
+            NGOBindings().dependencies();
+            return const NGOListScreen();
+          },
         ),
       ],
       // Global redirect logic for authentication
       redirect: (context, state) {
-        // Skip auth checks for auth-test screen
+        // Skip auth checks for these paths to allow direct access
         if (state.matchedLocation == '/auth-test' || 
-            state.matchedLocation == '/mobile-number') {
+            state.matchedLocation == '/mobile-number' ||
+            state.matchedLocation == '/otp-verification' ||
+            state.matchedLocation == '/city-selection' ||
+            state.matchedLocation == '/equipment' ||
+            state.matchedLocation == '/ngo' ||
+            state.matchedLocation == '/splash') {
           return null;
         }
         
+              // Default redirect to starting options screen
+      return '/auth-test';
+
+        /* Comment out the old authentication logic since we're just focusing on UI flow
         final session = Supabase.instance.client.auth.currentSession;
         final bool loggedIn = session != null;
         final bool loggingIn = state.matchedLocation == '/auth-test';
@@ -106,11 +148,7 @@ class AppRouter {
         if (loggedIn && loggingIn) {
           return '/home';
         }
-        
-        // Let splash screen handle its own navigation based on auth state
-        
-        // No redirection needed
-        return null;
+        */
       },
       // Updates router when auth state changes
       refreshListenable: GoRouterRefreshStream(
@@ -128,9 +166,17 @@ class AppRouter {
     debugPrint("AppRouter: goWithTransition called for path $path");
     
     if (_transitionController != null) {
-      await _transitionController!.transitionBetweenPages(() {
+      try {
+        await _transitionController!.transitionBetweenPages(() {
+          debugPrint("AppRouter: Navigating to $path during transition");
+          router.go(path);
+        });
+        debugPrint("AppRouter: Navigation to $path completed with transition");
+      } catch (e) {
+        debugPrint("AppRouter: Error during navigation to $path: $e");
+        // Fallback direct navigation
         router.go(path);
-      });
+      }
     } else {
       debugPrint("AppRouter: No transition controller, using direct navigation");
       router.go(path);

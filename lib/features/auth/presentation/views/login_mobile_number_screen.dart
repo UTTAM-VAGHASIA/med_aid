@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:med_aid/app/app_router.dart';
-import 'package:med_aid/features/auth/bindings/auth_binding.dart';
-import 'package:med_aid/features/auth/controllers/auth_controller.dart';
 
 class LoginMobileNumberScreen extends StatefulWidget {
   const LoginMobileNumberScreen({super.key});
@@ -14,15 +12,13 @@ class LoginMobileNumberScreen extends StatefulWidget {
 class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  late final AuthController _authController;
-  final AppRouter appRouter = Get.find<AppRouter>();
+  bool _isLoading = false;
+  late final AppRouter appRouter;
   
   @override
   void initState() {
     super.initState();
-    // Make sure auth binding is initialized
-    AuthBinding().dependencies();
-    _authController = Get.find<AuthController>();
+    appRouter = Get.find<AppRouter>();
   }
   
   @override
@@ -33,17 +29,25 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
 
   void _handleGetOTP() {
     if (_formKey.currentState!.validate()) {
-      // Format the phone number with country code
-      final phoneNumber = '+91${_phoneController.text.trim()}';
-      // Set the phone controller in the auth controller
-      _authController.phoneController.text = phoneNumber;
-      // Send OTP
-      _authController.sendPhoneOtp();
+      // Show loading state
+      setState(() {
+        _isLoading = true;
+      });
+      
+      // Simulate network delay 
+      Future.delayed(const Duration(milliseconds: 500), () {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Navigate to OTP verification screen
+        appRouter.goWithTransition('/otp-verification');
+      });
     }
   }
   
   void _handleGoogleLogin() {
-    _authController.signInWithGoogle();
+    // Just UI placeholder
   }
 
   @override
@@ -193,7 +197,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
 
                 // Get OTP button
                 ElevatedButton(
-                  onPressed: _handleGetOTP,
+                  onPressed: _isLoading ? null : _handleGetOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF54B2B3),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -202,15 +206,25 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                     ),
                     minimumSize: Size(screenSize.width, 0),
                     elevation: 0,
+                    disabledBackgroundColor: Colors.grey.shade300,
                   ),
-                  child: const Text(
-                    'Get OTP',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.0,
+                          ),
+                        )
+                      : const Text(
+                          'Get OTP',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
 
                 const SizedBox(height: 16),
