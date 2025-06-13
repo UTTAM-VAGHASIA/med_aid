@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:med_aid/app/app_router.dart';
+import 'package:med_aid/features/auth/controllers/auth_controller.dart';
+import 'package:med_aid/features/auth/bindings/auth_binding.dart';
 
 class LoginMobileNumberScreen extends StatefulWidget {
   const LoginMobileNumberScreen({super.key});
@@ -10,44 +12,53 @@ class LoginMobileNumberScreen extends StatefulWidget {
 }
 
 class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
-  final TextEditingController _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
+  late final AuthController controller;
   late final AppRouter appRouter;
   
   @override
   void initState() {
     super.initState();
+    // Make sure auth binding is initialized
+    AuthBinding().dependencies();
+    controller = Get.find<AuthController>();
     appRouter = Get.find<AppRouter>();
   }
   
   @override
   void dispose() {
-    _phoneController.dispose();
     super.dispose();
   }
 
-  void _handleGetOTP() {
+  void _handleGetOTP() async {
     if (_formKey.currentState!.validate()) {
-      // Show loading state
-      setState(() {
-        _isLoading = true;
-      });
+      // Clear any previous errors
+      controller.errorMessage.value = '';
+
+      // Format the phone number with country code
+      final phoneNumber = '+91${controller.phoneController.text}';
+      controller.phoneController.text = phoneNumber;
       
-      // Simulate network delay 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        setState(() {
-          _isLoading = false;
-        });
+      try {
+        // Send OTP using the controller
+        await controller.sendPhoneOtp();
         
-        // Navigate to OTP verification screen
-        appRouter.goWithTransition('/otp-verification');
-      });
+        // If no error, navigate to OTP verification screen
+        if (controller.errorMessage.value.isEmpty && controller.isOtpSent.value) {
+          appRouter.goWithTransition('/otp-verification');
+        }
+      } catch (e) {
+        // Error already handled in controller
+      }
     }
   }
   
-  void _handleGoogleLogin() {
-    // Just UI placeholder
+  void _handleGoogleLogin() async {
+    try {
+      await controller.signInWithGoogle();
+    } catch (e) {
+      // Error already handled in controller
+    }
   }
 
   @override
@@ -157,7 +168,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                       // Phone number input field
                       Expanded(
                         child: TextFormField(
-                          controller: _phoneController,
+                          controller: controller.phoneController,
                           keyboardType: TextInputType.phone,
                           decoration: const InputDecoration(
                             hintText: '9856322147',
@@ -193,11 +204,26 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                   ),
                 ),
 
+                // Error message
+                Obx(() => controller.errorMessage.value.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: Text(
+                        controller.errorMessage.value,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink()
+                ),
+
                 const Spacer(),
 
                 // Get OTP button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleGetOTP,
+                Obx(() => ElevatedButton(
+                  onPressed: controller.isLoading.value ? null : _handleGetOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF54B2B3),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -208,7 +234,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                     elevation: 0,
                     disabledBackgroundColor: Colors.grey.shade300,
                   ),
-                  child: _isLoading
+                  child: controller.isLoading.value
                       ? const SizedBox(
                           height: 20,
                           width: 20,
@@ -225,13 +251,13 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                             fontSize: 16,
                           ),
                         ),
-                ),
+                )),
 
                 const SizedBox(height: 16),
 
                 // Login with Google button
-                ElevatedButton.icon(
-                  onPressed: _handleGoogleLogin,
+                Obx(() => ElevatedButton.icon(
+                  onPressed: controller.isLoading.value ? null : _handleGoogleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black87,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -240,6 +266,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                     ),
                     minimumSize: Size(screenSize.width, 0),
                     elevation: 0,
+                    disabledBackgroundColor: Colors.grey.shade600,
                   ),
                   icon: Image.network(
                     'https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw',
@@ -259,7 +286,7 @@ class _LoginMobileNumberScreenState extends State<LoginMobileNumberScreen> {
                       fontSize: 16,
                     ),
                   ),
-                ),
+                )),
 
                 const SizedBox(height: 32),
               ],

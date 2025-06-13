@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
+import 'package:med_aid/features/auth/presentation/views/auth_test_screen.dart';
 import 'package:med_aid/features/auth/presentation/views/login_mobile_number_screen.dart';
 import 'package:med_aid/features/auth/presentation/views/otp_verification_screen.dart';
 import 'package:med_aid/features/auth/presentation/views/starting_options_screen.dart';
@@ -23,6 +24,7 @@ enum AppRoute {
   splash,
   auth,
   authTest,
+  test,
   locationSelection,
   home,
   equipmentDetail,
@@ -67,6 +69,11 @@ class AppRouter {
           path: '/auth-test',
           name: AppRoute.authTest.name,
           builder: (context, state) => const StartingOptionsScreen(),
+        ),
+        GoRoute(
+          path: '/test',
+          name: AppRoute.test.name,
+          builder: (context, state) => const AuthTestScreen(),
         ),
         GoRoute(
           path: '/mobile-number',
@@ -121,6 +128,7 @@ class AppRouter {
       redirect: (context, state) {
         // Skip auth checks for these paths to allow direct access
         if (state.matchedLocation == '/auth-test' || 
+            state.matchedLocation == '/test' ||
             state.matchedLocation == '/mobile-number' ||
             state.matchedLocation == '/otp-verification' ||
             state.matchedLocation == '/city-selection' ||

@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:med_aid/app/app_router.dart';
+import 'package:med_aid/features/auth/controllers/auth_controller.dart';
+import 'package:med_aid/features/auth/bindings/auth_binding.dart';
+import 'package:pinput/pinput.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({super.key});
@@ -11,21 +14,12 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  final List<TextEditingController> _otpControllers = List.generate(
-    6, 
-    (index) => TextEditingController()
-  );
-  
-  final List<FocusNode> _focusNodes = List.generate(
-    6, 
-    (index) => FocusNode()
-  );
-
   Timer? _timer;
   int _timeLeft = 300; // 5 minutes in seconds
-  bool _isLoading = false;
   bool _isResending = false;
   late final AppRouter appRouter;
+  late final AuthController controller;
+  final TextEditingController _pinController = TextEditingController();
 
   // Added for success state
   bool _showSuccessOverlay = false;
@@ -33,30 +27,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   void initState() {
     super.initState();
+    // Make sure auth binding is initialized
+    AuthBinding().dependencies();
+    controller = Get.find<AuthController>();
     appRouter = Get.find<AppRouter>();
-    _startTimer();
     
-    // Set up focus node listeners
-    for (int i = 0; i < 6; i++) {
-      _focusNodes[i].addListener(() {
-        if (_focusNodes[i].hasFocus && _otpControllers[i].text.isNotEmpty) {
-          _otpControllers[i].selection = TextSelection(
-            baseOffset: 0, 
-            extentOffset: _otpControllers[i].text.length
-          );
-        }
-      });
-    }
+    _startTimer();
+
+    // Listen to auth mode changes to know when to show success UI
+    ever(controller.authMode, (AuthMode mode) {
+      if (mode == AuthMode.completeProfile) {
+        // User verified and needs to complete profile
+        setState(() {
+          _showSuccessOverlay = true;
+        });
+        
+        // Navigate after showing success for 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) return;
+          appRouter.goWithTransition('/city-selection');
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    for (var controller in _otpControllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
+    _pinController.dispose();
     _timer?.cancel();
     super.dispose();
   }
@@ -79,47 +76,23 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  void _onOtpDigitChanged(int index, String value) {
-    if (value.isNotEmpty) {
-      // Auto-advance focus
-      if (index < 5) {
-        _focusNodes[index + 1].requestFocus();
-      } else {
-        // Last digit entered, remove focus
-        FocusScope.of(context).unfocus();
-      }
-    }
-  }
-
-  String _getOtpValue() {
-    return _otpControllers.map((controller) => controller.text).join();
-  }
-
-  void _handleSubmit() {
-    final otp = _getOtpValue();
+  void _handleSubmit() async {
+    final otp = _pinController.text;
     if (otp.length == 6) {
-      setState(() {
-        _isLoading = true;
-      });
+      // Clear previous errors
+      controller.errorMessage.value = '';
       
-      // Simulate verification delay
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        // Only proceed if the widget is still mounted
-        if (!mounted) return;
+      // Set the OTP value in controller
+      controller.otpController.text = otp;
+      
+      try {
+        // Verify OTP using controller
+        await controller.verifyPhoneOtp();
         
-        setState(() {
-          _isLoading = false;
-          _showSuccessOverlay = true;
-        });
-        
-        // Navigate after showing success for 2 seconds
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-          
-          // Navigate directly without using the dialog's context
-          appRouter.goWithTransition('/city-selection');
-        });
-      });
+        // Success case is handled by the ever() listener on authMode
+      } catch (e) {
+        // Error already handled in controller
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -130,32 +103,70 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  void _handleResend() {
+  void _handleResend() async {
     setState(() {
       _isResending = true;
     });
     
-    // Simulate resend delay
-    Future.delayed(const Duration(milliseconds: 500), () {
+    try {
+      // Clear previous errors
+      controller.errorMessage.value = '';
+      
+      // Resend OTP
+      await controller.sendPhoneOtp();
+      
       setState(() {
         _isResending = false;
         // Reset timer
         _timeLeft = 300;
+        _startTimer();
       });
       
-      _startTimer();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Code has been sent again'),
-          backgroundColor: Colors.green.shade600,
-        ),
-      );
-    });
+      if (controller.errorMessage.value.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Code has been sent again'),
+            backgroundColor: Colors.green.shade600,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isResending = false;
+      });
+      // Error already handled in controller
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Define Pinput default settings
+    final defaultPinTheme = PinTheme(
+      width: 56,
+      height: 56,
+      textStyle: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+
+    final focusedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(
+        border: Border.all(color: const Color(0xFF54B2B3), width: 2),
+      ),
+    );
+
+    final submittedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(
+        color: Colors.grey.shade100,
+      ),
+    );
+
     return Scaffold(
       body: Stack(
         children: [
@@ -204,11 +215,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   const SizedBox(height: 16),
                   
                   // Instruction text
-                  const Center(
+                  Center(
                     child: Text(
-                      'Enter the code from the SMS\nwe sent you',
+                      'Enter the code from the SMS\nsent to ${controller.phoneController.text}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black87,
                       ),
@@ -217,40 +228,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   
                   const SizedBox(height: 40),
                   
-                  // OTP input fields
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(
-                      6,
-                      (index) => SizedBox(
-                        width: 50,
-                        height: 50,
-                        child: TextField(
-                          controller: _otpControllers[index],
-                          focusNode: _focusNodes[index],
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 1,
-                          decoration: InputDecoration(
-                            counterText: '',
-                            hintText: '-',
-                            hintStyle: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: const Color(0xFF54B2B3), width: 2),
-                            ),
-                          ),
-                          onChanged: (value) => _onOtpDigitChanged(index, value),
-                        ),
-                      ),
+                  // Pinput OTP input field
+                  Center(
+                    child: Pinput(
+                      controller: _pinController,
+                      length: 6,
+                      defaultPinTheme: defaultPinTheme,
+                      focusedPinTheme: focusedPinTheme,
+                      submittedPinTheme: submittedPinTheme,
+                      pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
+                      showCursor: true,
+                      onCompleted: (pin) => _handleSubmit(),
                     ),
                   ),
                   
@@ -267,11 +255,29 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     ),
                   ),
                   
+                  // Error message
+                  Obx(() => controller.errorMessage.value.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: Center(
+                          child: Text(
+                            controller.errorMessage.value,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink()
+                  ),
+                  
                   const Spacer(),
                   
                   // Submit button
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSubmit,
+                  Obx(() => ElevatedButton(
+                    onPressed: controller.isLoading.value ? null : _handleSubmit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF54B2B3),
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -282,7 +288,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       elevation: 0,
                       disabledBackgroundColor: Colors.grey.shade300,
                     ),
-                    child: _isLoading
+                    child: controller.isLoading.value
                       ? const SizedBox(
                           height: 20,
                           width: 20,
@@ -299,7 +305,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             fontSize: 16,
                           ),
                         ),
-                  ),
+                  )),
                   
                   const SizedBox(height: 16),
                   
